@@ -1,11 +1,36 @@
-export default function Page() {
+import { DashboardLayout } from "@/components/dashboard-layout"
+import { loadAIConfig } from "./actions"
+import { adapter } from "@/server/data-adapter"
+import { evaluateNudges } from "@/lib/nudges"
+import { AIAssistantCards } from "./ai-assistant-cards"
+import { env } from "@/lib/env"
+
+export default async function AIAssistantPage() {
+  const initialConfig = await loadAIConfig()
+  
+  // Load data for nudge preview
+  const [events, members] = await Promise.all([
+    adapter.recentEvents(),
+    adapter.listMembers()
+  ])
+  
+  const nudges = evaluateNudges(initialConfig, events, members)
+
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-semibold">AI Assistant</h1>
-      <p className="text-muted-foreground">
-        This is a temporary stub. The real feature will be wired next.
-      </p>
-      <div className="card-elevated p-4">Coming soon…</div>
-    </div>
-  );
+    <DashboardLayout>
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground mb-2">AI Assistant</h1>
+          <p className="text-muted-foreground">Intelligent insights and automated engagement tools</p>
+        </div>
+
+        {/* Feature Cards */}
+        <AIAssistantCards 
+          initialConfig={initialConfig} 
+          nudges={nudges} 
+          hubId={env.DEMO_HUB_ID || ""} 
+        />
+      </div>
+    </DashboardLayout>
+  )
 }
