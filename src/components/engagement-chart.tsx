@@ -124,7 +124,7 @@ export function EngagementChart({ data, days = 60 }: EngagementChartProps) {
             allowDataOverflow={false}
           />
           <Tooltip
-            content={<CustomTooltip />}
+            content={(p) => <CustomTooltip {...p} />}
           />
           <Area
             type="monotone"
