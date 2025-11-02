@@ -1,4 +1,5 @@
-import { AIConfig, Event, Member } from "@/lib/ai-types"
+import { AIConfig } from "@/lib/ai-types"
+import { Event, Member } from "@/lib/types"
 
 export interface Nudge {
   memberId: string
