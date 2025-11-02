@@ -78,10 +78,15 @@ export function StepList({
     steps.forEach((step) => {
       const stepWarnings: string[] = []
       
-      if (step.kind === "post" && step.config?.channel_id) {
-        const channel = channels.find((c) => c.id === step.config.channel_id)
-        if (!channel) {
-          stepWarnings.push(`Channel "${step.config.channel_id}" no longer exists`)
+      if (step.kind === "post") {
+        const channelId = step.config?.channel_id
+        if (!channelId) {
+          stepWarnings.push("This step requires a channel, but none is selected.")
+        } else {
+          const channel = channels.find((c) => c.id === channelId)
+          if (!channel) {
+            stepWarnings.push(`Channel "${channelId}" no longer exists`)
+          }
         }
       }
       
@@ -94,10 +99,13 @@ export function StepList({
         })
       }
       
-      if (step.kind === "custom" && step.config?.bounty_id) {
-        const bounty = bounties.find((b) => b.id === step.config.bounty_id)
-        if (!bounty) {
-          stepWarnings.push(`Bounty no longer exists`)
+      if (step.kind === "custom") {
+        const bountyId = step.config?.bounty_id
+        if (bountyId) {
+          const bounty = bounties.find((b) => b.id === bountyId)
+          if (!bounty) {
+            stepWarnings.push(`Bounty no longer exists`)
+          }
         }
       }
       
