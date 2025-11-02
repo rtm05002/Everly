@@ -1,26 +1,36 @@
 ﻿"use client"
 
-import { type LucideIcon, TrendingUp, TrendingDown } from "lucide-react"
+import { TrendingUp, TrendingDown, Users, MessageSquare, Trophy, CircleDot, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface KpiCardProps {
   title: string
   value: string
   change: number
-  icon: LucideIcon
+  icon: string
   trend: "up" | "down"
 }
 
-export function KpiCard({ title, value, change, icon: Icon, trend }: KpiCardProps) {
+const iconMap: Record<string, LucideIcon> = {
+  Users,
+  TrendingUp,
+  MessageSquare,
+  Trophy,
+  CircleDot,
+}
+
+export function KpiCard({ title, value, change, icon, trend }: KpiCardProps) {
+  const Icon = iconMap[icon] || Users
+  
   return (
-    <div className="group card-elevated p-6 transition-all duration-300 hover:scale-[1.02]">
+    <div className="group card-elevated p-6 transition-all duration-300 hover:scale-[1.05] hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1">
       <div className="flex items-start justify-between mb-4">
         <div
           className={cn(
             "rounded-xl p-3 transition-all duration-300",
             trend === "up"
-              ? "bg-success/ text-success group-hover:bg-success/"
-              : "bg-primary/ text-primary group-hover:bg-primary/",
+              ? "bg-success/10 text-success group-hover:bg-success/20"
+              : "bg-primary/10 text-primary group-hover:bg-primary/20",
           )}
         >
           <Icon className="h-5 w-5" strokeWidth={2} />
@@ -29,7 +39,7 @@ export function KpiCard({ title, value, change, icon: Icon, trend }: KpiCardProp
         <div
           className={cn(
             "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold",
-            trend === "up" ? "bg-success/ text-success" : "bg-destructive/ text-destructive",
+            trend === "up" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700",
           )}
         >
           {trend === "up" ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}

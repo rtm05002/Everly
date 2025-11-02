@@ -1,11 +1,7 @@
-﻿import { DashboardLayout } from "@/components/dashboard-layout"
-import { OverviewPage } from "@/components/overview-page"
+﻿import { redirect } from "next/navigation"
 
 export default function Home() {
-  return (
-    <DashboardLayout>
-      <OverviewPage />
-    </DashboardLayout>
-  )
+  // Redirect to overview page which has the proper server-side implementation
+  redirect("/overview")
 }
 
