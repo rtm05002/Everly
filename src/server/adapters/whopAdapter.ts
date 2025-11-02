@@ -242,8 +242,8 @@ export async function getMembers(hubId: string): Promise<Member[]> {
     // Method 2: Try listMembers with companyId
     else if (client.listMembers) {
       console.log("[Whop Adapter] Using client.listMembers()")
-      whopData = await client.listMembers(hubId)
-      whopData = Array.isArray(whopData) ? whopData : whopData?.data || []
+      const response: any = await client.listMembers(hubId)
+      whopData = Array.isArray(response) ? response : response?.data || []
     }
     // Method 3: Try getMemberships
     else if (client.getMemberships) {
@@ -297,8 +297,8 @@ export async function getBounties(hubId: string): Promise<Bounty[]> {
     }
     // Method 2: Try listProducts with companyId
     else if (client.listProducts) {
-      whopData = await client.listProducts(hubId)
-      whopData = Array.isArray(whopData) ? whopData : whopData?.data || []
+      const response: any = await client.listProducts(hubId)
+      whopData = Array.isArray(response) ? response : response?.data || []
     }
     // Method 3: Try getProducts
     else if (client.getProducts) {
@@ -346,8 +346,8 @@ export async function getEvents(hubId: string): Promise<Event[]> {
     }
     // Method 3: Try listTransactions
     else if (client.listTransactions) {
-      whopData = await client.listTransactions(hubId)
-      whopData = Array.isArray(whopData) ? whopData : whopData?.data || []
+      const response: any = await client.listTransactions(hubId)
+      whopData = Array.isArray(response) ? response : response?.data || []
     }
     // Method 4: Try getTransactions
     else if (client.getTransactions) {
