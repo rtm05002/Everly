@@ -76,14 +76,14 @@ function getAnswerForQuestion(question: string): AIResponse {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { hubId: string } }
+  { params }: { params: Promise<{ hubId: string }> }
 ) {
   const startTime = Date.now()
   
   try {
     const body: QueryRequest = await request.json()
     const { question, memberId } = body
-    const { hubId } = params
+    const { hubId } = await params
 
     // Validate required fields
     if (!question?.trim()) {
@@ -128,10 +128,11 @@ export async function POST(
     console.error("Error processing AI query:", error)
     
     // Log error
+    const { hubId: errorHubId } = await params
     const aiLogs = await read<any[]>('ai_logs') || []
     const errorLogEntry = {
       ts: new Date().toISOString(),
-      hubId: params.hubId,
+      hubId: errorHubId,
       memberId: 'anonymous',
       question: 'Error occurred',
       answer: 'Sorry, I encountered an error processing your question.',

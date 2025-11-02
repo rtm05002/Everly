@@ -12,16 +12,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Load members and events
-    const [members, events] = await Promise.all([
-      read<any[]>('members') || [],
-      read<any[]>('events') || []
-    ])
+    const membersData = await read<any[]>('members')
+    const eventsData = await read<any[]>('events')
+    const members = membersData || []
+    const events = eventsData || []
 
     // Evaluate nudges
     const nudges = evaluateNudges(aiConfig, events, members)
 
     // Load existing nudge log
-    const nudgeLog = await read<any[]>('nudgeLog') || []
+    const nudgeLogData = await read<any[]>('nudgeLog')
+    const nudgeLog = nudgeLogData || []
 
     // Create new log entry
     const logEntry = {

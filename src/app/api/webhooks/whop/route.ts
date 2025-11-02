@@ -1,11 +1,11 @@
 export const runtime = "nodejs";
 
-import { Request } from "next/server";
+import { NextRequest } from "next/server";
 import { extractSignature, verifyHmacSha256 } from "@/server/whop/signature";
 import { mapWhopEventToDb } from "@/server/whop/map-events";
 
 // Read raw body, verify, parse, dispatch. Keep response fast.
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const raw = await req.text(); // IMPORTANT: raw for HMAC
     const sig = extractSignature(req.headers);
