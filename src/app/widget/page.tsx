@@ -3,14 +3,15 @@ import { adapter } from "@/server/data-adapter"
 import { env } from "@/lib/env"
 
 interface WidgetPageProps {
-  searchParams: {
+  searchParams?: Promise<{
     hubId?: string
-  }
+  }>
 }
 
 export default async function WidgetPage({ searchParams }: WidgetPageProps) {
   // Use the actual hubId from search params or fall back to DEMO_HUB_ID from env
-  const hubId = searchParams.hubId || env.DEMO_HUB_ID || "demo"
+  const resolvedParams = await searchParams
+  const hubId = resolvedParams?.hubId || env.DEMO_HUB_ID || "demo"
   
   // Load bounties data at the server level
   // The adapter already filters by hub_id (via DEMO_HUB_ID env var or the actual hub)
