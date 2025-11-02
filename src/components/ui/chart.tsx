@@ -105,6 +105,7 @@ ${colorConfig
 const ChartTooltip = RechartsPrimitive.Tooltip
 
 type LooseTooltipEntry = { name?: string; value?: number | string; color?: string; payload?: any; dataKey?: string | number }
+type LooseLegendPayload = { value?: string; dataKey?: string | number; color?: string }
 
 function ChartTooltipContent({
   active,
@@ -265,11 +266,13 @@ function ChartLegendContent({
   payload,
   verticalAlign = 'bottom',
   nameKey,
-}: React.ComponentProps<'div'> &
-  Pick<RechartsPrimitive.LegendProps, 'payload' | 'verticalAlign'> & {
-    hideIcon?: boolean
-    nameKey?: string
-  }) {
+}: {
+  className?: string
+  hideIcon?: boolean
+  payload?: LooseLegendPayload[]
+  verticalAlign?: 'top' | 'bottom'
+  nameKey?: string
+}) {
   const { config } = useChart()
 
   if (!payload?.length) {
