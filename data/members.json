@@ -1,0 +1,32 @@
+[
+  {
+    "id": "m_1",
+    "username": "Alice",
+    "joinedAt": "2025-09-14T03:02:54.026Z",
+    "lastActiveAt": "2025-10-23T03:02:54.028Z",
+    "messagesCount": 12,
+    "roles": [
+      "member"
+    ]
+  },
+  {
+    "id": "m_2",
+    "username": "Bob",
+    "joinedAt": "2025-10-09T03:02:54.028Z",
+    "lastActiveAt": "2025-10-16T03:02:54.028Z",
+    "messagesCount": 3,
+    "roles": [
+      "member"
+    ]
+  },
+  {
+    "id": "m_3",
+    "username": "Cara",
+    "joinedAt": "2025-10-21T03:02:54.028Z",
+    "lastActiveAt": "2025-10-21T03:02:54.028Z",
+    "messagesCount": 0,
+    "roles": [
+      "member"
+    ]
+  }
+]

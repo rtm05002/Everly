@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Sparkles, Zap, MessageSquare, TrendingUp } from "lucide-react"
 import { ConfigForm } from "./config-form"
-import { NudgeAdmin } from "./nudge-admin"
+import { NudgeManagement } from "./nudge-management"
 import { AIConfig } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -130,7 +130,7 @@ export function AIAssistantCards({ initialConfig, nudges, hubId }: AIAssistantCa
       {showEngagementNudges && (
         <div className="card-elevated p-6">
           <h2 className="text-xl font-semibold mb-6">Engagement Nudges</h2>
-          <NudgeAdmin hubId={hubId} />
+          <NudgeManagement hubId={hubId} />
         </div>
       )}
     </>

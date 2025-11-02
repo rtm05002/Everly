@@ -1,11 +1,17 @@
-﻿import { cookies, headers } from "next/headers";
-import { createServerClient } from "@supabase/supabase-js";
+﻿import { createClient } from "@supabase/supabase-js";
 
 export function getSupabaseServer() {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  // For service role client, we don't need to pass authorization headers
+  // The service role key already provides full access
+  const supabase = createClient(
+    process.env.SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE!, // server-only
-    { global: { headers: { Authorization: `Bearer ${headers().get("authorization") || ""}` } } }
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
   );
   return supabase;
 }

@@ -2,9 +2,10 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Bot, Trophy, Users, TrendingUp, BarChart3, Settings, ChevronDown, Zap, ExternalLink } from "lucide-react"
+import { LayoutDashboard, Bot, Trophy, Users, TrendingUp, BarChart3, Settings, ChevronDown, Zap, ExternalLink, ListTodo } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
+import { env } from "@/lib/env"
 
 const navigationSections = [
   {
@@ -13,6 +14,7 @@ const navigationSections = [
       { name: "Overview", href: "/", icon: LayoutDashboard },
       { name: "AI Assistant", href: "/ai-assistant", icon: Bot },
       { name: "Bounties", href: "/bounties", icon: Trophy },
+      ...(env.FEATURE_ONBOARDING ? [{ name: "Onboarding", href: "/onboarding", icon: ListTodo }] : []),
     ],
   },
   {
@@ -51,7 +53,7 @@ export function Sidebar({ open }: { open: boolean }) {
     >
       <div className="h-full bg-sidebar border-r border-sidebar-border p-6 flex flex-col">
         <div className="mb-8 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/ text-primary-foreground font-bold text-lg shadow-lg shadow-primary/">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-bold text-lg shadow-lg shadow-primary/20">
             E
           </div>
           <span className="text-xl font-semibold tracking-tight">Everly</span>
@@ -81,8 +83,8 @@ export function Sidebar({ open }: { open: boolean }) {
                           className={cn(
                             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                             isActive
-                              ? "bg-primary/ text-primary shadow-sm"
-                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                              ? "bg-blue-200 text-blue-800 shadow-sm"
+                              : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
                           )}
                         >
                           <item.icon className="h-5 w-5" strokeWidth={2} />
@@ -97,11 +99,11 @@ export function Sidebar({ open }: { open: boolean }) {
           })}
         </nav>
 
-        <div className="mt-6 pt-6 border-t border-sidebar-border">
-          <div className="rounded-xl bg-gradient-to-br from-primary to-primary/5 p-4 border border-primary">
-            <p className="text-xs font-semibold text-foreground mb-1">Upgrade to Pro</p>
-            <p className="text-xs text-muted-foreground mb-3">Advanced analytics & customizations</p>
-            <button className="w-full rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary transition-colors shadow-sm">
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 p-4 border border-blue-200">
+            <p className="text-xs font-semibold text-gray-900 mb-1">Upgrade to Pro</p>
+            <p className="text-xs text-gray-600 mb-3">Advanced analytics & customizations</p>
+            <button className="w-full rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 transition-colors shadow-sm">
               Upgrade Now
             </button>
           </div>

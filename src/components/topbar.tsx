@@ -14,7 +14,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   }, [])
 
   return (
-    <header className="sticky top-0 z-30 bg-background/ backdrop-blur-xl border-b border-border/">
+    <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50">
       <div className="flex h-16 items-center justify-between px-6">
         <div className="flex items-center gap-4">
           <Button
@@ -32,7 +32,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               <input
                 type="text"
                 placeholder="Search members, bounties, messages..."
-                className="h-10 w-96 rounded-xl bg-secondary/ pl-10 pr-4 text-sm outline-none ring-1 ring-transparent transition-all placeholder:text-muted-foreground focus:bg-secondary focus:ring-primary/"
+                className="h-10 w-96 rounded-xl bg-secondary pl-10 pr-4 text-sm outline-none ring-1 ring-transparent transition-all placeholder:text-muted-foreground focus:bg-secondary focus:ring-primary"
               />
             </div>
             <Button variant="ghost" size="icon" className="h-10 w-10">

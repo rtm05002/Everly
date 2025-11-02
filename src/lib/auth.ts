@@ -1,2 +1,25 @@
-﻿import { NextRequest } from "next/server";`nimport { createServerClient } from "./supabase-server";`n`nexport async function getCurrentUser(request: NextRequest) {`n  const supabase = createServerClient();`n  const { data: { user } } = await supabase.auth.getUser();`n  return user;`n}`n`nexport function requireAuth(handler: Function) {`n  return async (request: NextRequest, ...args: any[]) => {`n    const user = await getCurrentUser(request);`n    if (!user) {`n      return new Response("Unauthorized", { status: 401 });`n    }`n    return handler(request, ...args);`n  };`n}
+﻿import { NextRequest } from "next/server";
+import { getSupabaseServer } from "./supabase-server";
+import { verifyJWT } from "./jwt";
+
+export async function getCurrentUser(request: NextRequest) {
+  const supabase = getSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+}
+
+export function requireAuth(handler: Function) {
+  return async (request: NextRequest, ...args: any[]) => {
+    const user = await getCurrentUser(request);
+    if (!user) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    return handler(request, ...args);
+  };
+}
+
+export function parseMemberFromToken(token: string): { hub_id: string; role: string; member_id: string; exp: number; iat: number } | null {
+  const secret = process.env.JWT_SIGNING_SECRET || "devsecret";
+  return verifyJWT(token, secret);
+}
 

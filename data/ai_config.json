@@ -1,0 +1,21 @@
+{
+  "mode": "assist",
+  "tone": "friendly",
+  "bannedPhrases": [],
+  "escalateIf": [
+    "refund",
+    "chargeback"
+  ],
+  "nudgeRecipes": [
+    {
+      "name": "Come back",
+      "trigger": "inactive_7d",
+      "messageTemplate": "We miss you in the hub—new content is waiting!"
+    },
+    {
+      "name": "First Post",
+      "trigger": "no_posts_3d",
+      "messageTemplate": "Say hi in #general and introduce yourself 👋"
+    }
+  ]
+}

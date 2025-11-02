@@ -1,0 +1,44 @@
+[
+  {
+    "type": "bounty_completed",
+    "memberId": "m_1",
+    "ts": "2025-10-03T03:02:54.028Z",
+    "metadata": {
+      "bountyId": "b_2",
+      "hubId": "demo-hub"
+    }
+  },
+  {
+    "type": "bounty_completed",
+    "memberId": "m_2",
+    "ts": "2025-10-11T03:02:54.028Z",
+    "metadata": {
+      "bountyId": "b_2",
+      "hubId": "demo-hub"
+    }
+  },
+  {
+    "type": "posted",
+    "memberId": "m_1",
+    "ts": "2025-10-22T03:02:54.028Z",
+    "metadata": {
+      "hubId": "demo-hub"
+    }
+  },
+  {
+    "type": "posted",
+    "memberId": "m_2",
+    "ts": "2025-10-15T03:02:54.028Z",
+    "metadata": {
+      "hubId": "demo-hub"
+    }
+  },
+  {
+    "type": "posted",
+    "memberId": "m_3",
+    "ts": "2025-10-21T03:02:54.028Z",
+    "metadata": {
+      "hubId": "demo-hub"
+    }
+  }
+]
