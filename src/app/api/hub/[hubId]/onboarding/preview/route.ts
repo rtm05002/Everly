@@ -7,13 +7,14 @@ import type { OnboardingStep } from "@/lib/types"
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { hubId: string } }
+  { params }: { params: Promise<{ hubId: string }> }
 ) {
   if (!env.FEATURE_ONBOARDING) {
     return NextResponse.json({ error: "Feature disabled" }, { status: 404 })
   }
 
   try {
+    const { hubId } = await params
     const body = await req.json()
     const { memberId, flowId } = body
 
@@ -30,7 +31,7 @@ export async function POST(
     const { data: steps, error: stepsError } = await supa
       .from("onboarding_steps")
       .select("*")
-      .eq("hub_id", params.hubId)
+      .eq("hub_id", hubId)
       .eq("flow_id", flowId)
       .order("order_index", { ascending: true })
 
@@ -51,7 +52,7 @@ export async function POST(
       supa
         .from("activity_logs")
         .select("type, meta, created_at")
-        .eq("hub_id", params.hubId)
+        .eq("hub_id", hubId)
         .eq("member_id", memberId)
         .gte("created_at", cutoffDate)
         .order("created_at", { ascending: false })
@@ -59,7 +60,7 @@ export async function POST(
       supa
         .from("bounty_events")
         .select("bounty_id, created_at")
-        .eq("hub_id", params.hubId)
+        .eq("hub_id", hubId)
         .eq("member_id", memberId)
         .eq("status", "completed")
         .gte("created_at", cutoffDate),

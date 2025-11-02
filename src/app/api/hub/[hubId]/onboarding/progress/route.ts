@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer } from "@/lib/supabase-server"
 import { env } from "@/lib/env"
 
-export async function POST(req: NextRequest, { params }: { params: { hubId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ hubId: string }> }) {
   if (!env.FEATURE_ONBOARDING) {
     return NextResponse.json({ error: "Feature disabled" }, { status: 404 })
   }
 
   try {
+    const { hubId } = await params
     const body = await req.json()
     const supa = getSupabaseServer()
     
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: { hubId: stri
     const { data, error } = await supa
       .from("onboarding_progress")
       .upsert({
-        hub_id: params.hubId,
+        hub_id: hubId,
         member_id: memberId,
         flow_id: body.flow_id,
         step_id: body.step_id,

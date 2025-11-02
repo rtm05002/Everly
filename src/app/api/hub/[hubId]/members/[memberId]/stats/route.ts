@@ -9,10 +9,10 @@ import { env } from "@/lib/env"
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { hubId: string; memberId: string } }
+  { params }: { params: Promise<{ hubId: string; memberId: string }> }
 ) {
   try {
-    const { hubId, memberId } = params
+    const { hubId, memberId } = await params
 
     if (!hubId || !memberId) {
       return NextResponse.json(

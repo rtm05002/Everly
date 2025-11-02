@@ -5,14 +5,15 @@ import { env } from "@/lib/env"
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { hubId: string; channelId: string } }
+  { params }: { params: Promise<{ hubId: string; channelId: string }> }
 ) {
   if (!env.FEATURE_ONBOARDING) {
     return NextResponse.json({ error: "Feature disabled" }, { status: 404 })
   }
 
   try {
-    const exists = await validateChannelExists(params.hubId, params.channelId)
+    const { hubId, channelId } = await params
+    const exists = await validateChannelExists(hubId, channelId)
     if (exists) {
       return NextResponse.json({ valid: true })
     } else {

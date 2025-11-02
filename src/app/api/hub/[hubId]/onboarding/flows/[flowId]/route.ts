@@ -5,21 +5,22 @@ import { env } from "@/lib/env"
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { hubId: string; flowId: string } }
+  { params }: { params: Promise<{ hubId: string; flowId: string }> }
 ) {
   if (!env.FEATURE_ONBOARDING) {
     return NextResponse.json({ error: "Feature disabled" }, { status: 404 })
   }
 
   try {
+    const { hubId, flowId } = await params
     const supa = getSupabaseServer()
     
     // Fetch flow details
     const { data: flow, error: flowError } = await supa
       .from("onboarding_flows")
       .select("*")
-      .eq("id", params.flowId)
-      .eq("hub_id", params.hubId)
+      .eq("id", flowId)
+      .eq("hub_id", hubId)
       .single()
 
     if (flowError) {
@@ -31,8 +32,8 @@ export async function GET(
     const { data: steps, error: stepsError } = await supa
       .from("onboarding_steps")
       .select("*")
-      .eq("flow_id", params.flowId)
-      .eq("hub_id", params.hubId)
+      .eq("flow_id", flowId)
+      .eq("hub_id", hubId)
       .order("order_index", { ascending: true })
 
     if (stepsError) {

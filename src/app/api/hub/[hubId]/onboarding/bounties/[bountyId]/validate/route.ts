@@ -5,14 +5,15 @@ import { env } from "@/lib/env"
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { hubId: string; bountyId: string } }
+  { params }: { params: Promise<{ hubId: string; bountyId: string }> }
 ) {
   if (!env.FEATURE_ONBOARDING) {
     return NextResponse.json({ error: "Feature disabled" }, { status: 404 })
   }
 
   try {
-    const exists = await validateBountyExists(params.hubId, params.bountyId)
+    const { hubId, bountyId } = await params
+    const exists = await validateBountyExists(hubId, bountyId)
     if (exists) {
       return NextResponse.json({ valid: true })
     } else {

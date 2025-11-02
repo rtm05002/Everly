@@ -5,14 +5,15 @@ import { env } from "@/lib/env"
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { hubId: string } }
+  { params }: { params: Promise<{ hubId: string }> }
 ) {
   if (!env.FEATURE_ONBOARDING) {
     return NextResponse.json({ error: "Feature disabled" }, { status: 404 })
   }
 
   try {
-    const bounties = await getActiveBountiesForHub(params.hubId)
+    const { hubId } = await params
+    const bounties = await getActiveBountiesForHub(hubId)
     return NextResponse.json({ bounties })
   } catch (error: any) {
     console.error("Failed to fetch bounties:", error)

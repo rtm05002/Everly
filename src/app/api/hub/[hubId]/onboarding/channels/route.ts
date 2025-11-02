@@ -5,14 +5,15 @@ import { env } from "@/lib/env"
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { hubId: string } }
+  { params }: { params: Promise<{ hubId: string }> }
 ) {
   if (!env.FEATURE_ONBOARDING) {
     return NextResponse.json({ error: "Feature disabled" }, { status: 404 })
   }
 
   try {
-    const channels = await getChannelsForHub(params.hubId)
+    const { hubId } = await params
+    const channels = await getChannelsForHub(hubId)
     return NextResponse.json({ channels })
   } catch (error: any) {
     console.error("Failed to fetch channels:", error)

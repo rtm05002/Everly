@@ -6,13 +6,14 @@ import { env } from "@/lib/env"
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { hubId: string } }
+  { params }: { params: Promise<{ hubId: string }> }
 ) {
   if (env.FEATURE_NUDGES !== 'true') {
     return NextResponse.json({ disabled: true }, { status: 404 })
   }
 
   try {
+    const { hubId } = await params
     const { recipe } = await req.json()
     
     if (!recipe || !recipe.trigger) {
@@ -26,7 +27,7 @@ export async function POST(
     const { data: members, error } = await supa
       .from("members")
       .select("id, last_active_at")
-      .eq("hub_id", params.hubId)
+      .eq("hub_id", hubId)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })

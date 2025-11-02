@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer } from "@/lib/supabase-server"
 import { env } from "@/lib/env"
 
-export async function GET(req: NextRequest, { params }: { params: { hubId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ hubId: string }> }) {
   if (!env.FEATURE_ONBOARDING) {
     return NextResponse.json({ error: "Feature disabled" }, { status: 404 })
   }
 
   try {
+    const { hubId } = await params
     const supa = getSupabaseServer()
     
     // TODO: Extract member_id from JWT token
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { hubId: strin
     const { data, error } = await supa
       .from("onboarding_progress")
       .select("*")
-      .eq("hub_id", params.hubId)
+      .eq("hub_id", hubId)
       .eq("member_id", memberId)
       .order("created_at", { ascending: true })
 

@@ -5,14 +5,15 @@ import { env } from "@/lib/env"
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { hubId: string } }
+  { params }: { params: Promise<{ hubId: string }> }
 ) {
   if (!env.FEATURE_ONBOARDING) {
     return NextResponse.json({ error: "Feature disabled" }, { status: 404 })
   }
 
   try {
-    const tiers = await getTiersForHub(params.hubId)
+    const { hubId } = await params
+    const tiers = await getTiersForHub(hubId)
     return NextResponse.json({ tiers })
   } catch (error: any) {
     console.error("Failed to fetch tiers:", error)

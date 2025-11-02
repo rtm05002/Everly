@@ -5,7 +5,7 @@ import { env } from "@/lib/env"
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { hubId: string; flowId: string } }
+  { params }: { params: Promise<{ hubId: string; flowId: string }> }
 ) {
   if (!env.FEATURE_ONBOARDING) {
     return NextResponse.json({ error: "Feature disabled" }, { status: 404 })
@@ -18,7 +18,8 @@ export async function POST(
     //   return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     // }
 
-    const result = await backfillFlowProgress(params.hubId, params.flowId)
+    const { hubId, flowId } = await params
+    const result = await backfillFlowProgress(hubId, flowId)
 
     return NextResponse.json({
       success: true,

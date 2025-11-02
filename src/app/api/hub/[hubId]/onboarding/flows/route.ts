@@ -3,17 +3,18 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer } from "@/lib/supabase-server"
 import { env } from "@/lib/env"
 
-export async function GET(req: NextRequest, { params }: { params: { hubId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ hubId: string }> }) {
   if (!env.FEATURE_ONBOARDING) {
     return NextResponse.json({ error: "Feature disabled" }, { status: 404 })
   }
 
   try {
+    const { hubId } = await params
     const supa = getSupabaseServer()
     const { data, error } = await supa
       .from("onboarding_flows")
       .select("id, name, description, is_default")
-      .eq("hub_id", params.hubId)
+      .eq("hub_id", hubId)
       .eq("enabled", true)
       .order("created_at", { ascending: true })
 
@@ -29,12 +30,13 @@ export async function GET(req: NextRequest, { params }: { params: { hubId: strin
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { hubId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ hubId: string }> }) {
   if (!env.FEATURE_ONBOARDING) {
     return NextResponse.json({ error: "Feature disabled" }, { status: 404 })
   }
 
   try {
+    const { hubId } = await params
     const body = await req.json()
     const supa = getSupabaseServer()
     
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest, { params }: { params: { hubId: stri
     const { data, error } = await supa
       .from("onboarding_flows")
       .insert({
-        hub_id: params.hubId,
+        hub_id: hubId,
         name: body.name,
         description: body.description || null,
         audience: body.audience || {},

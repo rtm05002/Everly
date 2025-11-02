@@ -5,14 +5,15 @@ import { env } from "@/lib/env"
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { hubId: string } }
+  { params }: { params: Promise<{ hubId: string }> }
 ) {
   try {
+    const { hubId } = await params
     const supa = getSupabaseServer()
     const { data, error } = await supa
       .from("members")
       .select("id, whop_member_id")
-      .eq("hub_id", params.hubId)
+      .eq("hub_id", hubId)
       .limit(50)
       .order("created_at", { ascending: false })
 

@@ -7,13 +7,14 @@ import { env } from "@/lib/env"
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { hubId: string } }
+  { params }: { params: Promise<{ hubId: string }> }
 ) {
   if (env.FEATURE_NUDGES !== 'true') {
     return NextResponse.json({ disabled: true }, { status: 404 })
   }
 
   try {
+    const { hubId } = await params
     const { recipe, memberIds } = await req.json()
     
     if (!recipe || !memberIds || !Array.isArray(memberIds)) {
@@ -29,9 +30,9 @@ export async function POST(
     const { data: runRow, error: runErr } = await supa
       .from("nudge_runs")
       .insert({
-        hub_id: params.hubId,
+        hub_id: hubId,
         recipe_id: recipe.id,
-        initiated_by: "creator:" + params.hubId,
+        initiated_by: "creator:" + hubId,
         status: "running"
       })
       .select()
@@ -60,17 +61,17 @@ export async function POST(
       const vars = {
         first_name: m.whop_member_id ?? "there",
         inactive_days: inactiveDays,
-        cta_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/widget?hubId=${params.hubId}`,
+        cta_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/widget?hubId=${hubId}`,
         community_name: "Everly Community"
       }
 
       return {
-        hub_id: params.hubId,
+        hub_id: hubId,
         recipe_id: recipe.id,
         run_id: runRow.id,
         member_id: m.id,
         channel: recipe.channel ?? "dm",
-        dedupe_key: dedupeKey(params.hubId, recipe.id, m.id, "week"),
+        dedupe_key: dedupeKey(hubId, recipe.id, m.id, "week"),
         rendered_message: renderTemplate(recipe.message_template, vars),
         status: "queued",
         meta: {
