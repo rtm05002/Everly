@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { OnboardingStep, OnboardingStepKind } from "@/lib/types"
+import { flattenZod } from "@/lib/validate"
 import { Channel, BountyOption, TierOption } from "@/server/onboarding/data-hooks"
 import {
   ReadConfig,
@@ -253,7 +254,7 @@ export function StepConfigForm({
     // Parse and validate with Zod schema
     const parseResult = schema.safeParse(data)
     if (!parseResult.success) {
-      setValidationErrors(parseResult.error.issues.map(e => e.message))
+      setValidationErrors(flattenZod(parseResult.error))
       return
     }
     

@@ -53,6 +53,8 @@ export type NudgeTrigger =
 
 export const COHORTS = ["New", "Lurker", "Champion"] as const
 export type Cohort = (typeof COHORTS)[number]
+export const isCohort = (v: string): v is Cohort =>
+  (COHORTS as readonly string[]).includes(v)
 
 export type NudgeTargeting = {
   tiers?: string[]
