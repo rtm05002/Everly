@@ -20,6 +20,15 @@ export function requireAuth(handler: Function) {
 
 export function parseMemberFromToken(token: string): { hub_id: string; role: string; member_id: string; exp: number; iat: number } | null {
   const secret = process.env.JWT_SIGNING_SECRET || "devsecret";
-  return verifyJWT(token, secret);
+  const payload = verifyJWT(token, secret);
+  if (!payload) return null;
+  // Extract only the fields we need
+  return {
+    hub_id: payload.hub_id,
+    role: payload.role,
+    member_id: payload.member_id,
+    exp: payload.exp,
+    iat: payload.iat,
+  };
 }
 

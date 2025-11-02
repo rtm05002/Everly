@@ -8,14 +8,16 @@ interface JWTPayload {
   hub_id: string
   member_id: string
   exp: number
+  iat: number
 }
 
-export function signJWT(payload: Omit<JWTPayload, 'exp'>, secret: string, expiresInMinutes = 10): string {
+export function signJWT(payload: Omit<JWTPayload, 'exp' | 'iat'>, secret: string, expiresInMinutes = 10): string {
   const now = Math.floor(Date.now() / 1000)
   const exp = now + (expiresInMinutes * 60)
   
   const jwtPayload: JWTPayload = {
     ...payload,
+    iat: now,
     exp
   }
 
