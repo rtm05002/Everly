@@ -132,7 +132,7 @@ export interface Member {
 }
 
 export interface Event {
-  type: "joined" | "posted" | "bounty_completed" | "streak_missed" | "announcement_received"
+  type: "joined" | "posted" | "bounty_completed" | "streak_missed" | "streak_milestone" | "announcement_received"
   memberId: string
   ts: string
   metadata?: Record<string, any>
