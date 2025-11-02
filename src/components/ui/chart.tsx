@@ -104,6 +104,8 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip
 
+type LooseTooltipEntry = { name?: string; value?: number | string; color?: string; payload?: any; dataKey?: string | number }
+
 function ChartTooltipContent({
   active,
   payload,
@@ -118,14 +120,21 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-}: React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
-  React.ComponentProps<'div'> & {
-    hideLabel?: boolean
-    hideIndicator?: boolean
-    indicator?: 'line' | 'dot' | 'dashed'
-    nameKey?: string
-    labelKey?: string
-  }) {
+}: {
+  active?: boolean
+  payload?: LooseTooltipEntry[]
+  label?: string | number
+  className?: string
+  indicator?: 'line' | 'dot' | 'dashed'
+  hideLabel?: boolean
+  hideIndicator?: boolean
+  labelFormatter?: (value: any, payload?: LooseTooltipEntry[]) => React.ReactNode
+  labelClassName?: string
+  formatter?: (value: any, name?: any, item?: any, index?: number, payload?: any) => React.ReactNode
+  color?: string
+  nameKey?: string
+  labelKey?: string
+}) {
   const { config } = useChart()
 
   const tooltipLabel = React.useMemo(() => {
@@ -232,7 +241,7 @@ function ChartTooltipContent({
                         {itemConfig?.label || item.name}
                       </span>
                     </div>
-                    {item.value && (
+                    {item.value && typeof item.value === 'number' && (
                       <span className="text-foreground font-mono font-medium tabular-nums">
                         {item.value.toLocaleString()}
                       </span>
