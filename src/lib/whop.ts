@@ -43,35 +43,14 @@ export function getWhopClient(): any | null {
       })
       return whopClient
     } catch (sdkError: any) {
-      // If @whop/sdk fails, try @whop/api as fallback
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const WhopSDK = require("@whop/api")
-        whopClient = new WhopSDK({
-          apiKey,
-        })
-        return whopClient
-      } catch (apiError: any) {
-        // Try alternative export pattern
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          const { WhopAPI } = require("@whop/api")
-          whopClient = new WhopAPI({
-            apiKey,
-          })
-          return whopClient
-        } catch (altError: any) {
-          console.warn(
-            "[Whop Client] Failed to initialize Whop SDK. Make sure @whop/sdk or @whop/api is installed."
-          )
-          console.warn("[Whop Client] SDK error:", sdkError?.message)
-          console.warn("[Whop Client] API error:", apiError?.message)
-          initializationError = new Error(
-            `Whop SDK initialization failed: ${sdkError?.message || "Unknown error"}`
-          )
-          return null
-        }
-      }
+      console.warn(
+        "[Whop Client] Failed to initialize Whop SDK. Make sure @whop/sdk is installed."
+      )
+      console.warn("[Whop Client] SDK error:", sdkError?.message)
+      initializationError = new Error(
+        `Whop SDK initialization failed: ${sdkError?.message || "Unknown error"}`
+      )
+      return null
     }
   } catch (error: any) {
     console.error("[Whop Client] Initialization error:", error.message)
