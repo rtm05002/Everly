@@ -25,7 +25,7 @@ import {
   Trash2
 } from "lucide-react"
 import { toast } from "sonner"
-import { EnhancedNudgeRecipe, NudgeTrigger, NudgeTargeting } from "@/lib/types"
+import { EnhancedNudgeRecipe, NudgeTrigger, NudgeTargeting, COHORTS, type Cohort } from "@/lib/types"
 
 interface RecipeEditorProps {
   recipe: EnhancedNudgeRecipe | null
@@ -152,7 +152,12 @@ export function RecipeEditor({ recipe, isOpen, onClose, onSave, onTest, hubId }:
     }))
   }
 
+  const isCohort = (v: string): v is Cohort => {
+    return COHORTS.includes(v as Cohort)
+  }
+
   const addCohort = (cohort: string) => {
+    if (!isCohort(cohort)) return
     const currentCohorts = formData.targeting?.cohorts || []
     if (!currentCohorts.includes(cohort)) {
       updateTargeting('cohorts', [...currentCohorts, cohort])
@@ -160,6 +165,7 @@ export function RecipeEditor({ recipe, isOpen, onClose, onSave, onTest, hubId }:
   }
 
   const removeCohort = (cohort: string) => {
+    if (!isCohort(cohort)) return
     const currentCohorts = formData.targeting?.cohorts || []
     updateTargeting('cohorts', currentCohorts.filter(c => c !== cohort))
   }
@@ -293,9 +299,11 @@ export function RecipeEditor({ recipe, isOpen, onClose, onSave, onTest, hubId }:
                       <SelectValue placeholder="Add cohort" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="New">New &lt;14d</SelectItem>
-                      <SelectItem value="Lurker">Lurkers</SelectItem>
-                      <SelectItem value="Champion">Champions</SelectItem>
+                      {COHORTS.map((cohort) => (
+                        <SelectItem key={cohort} value={cohort}>
+                          {cohort === "New" ? "New <14d" : cohort === "Lurker" ? "Lurkers" : "Champions"}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

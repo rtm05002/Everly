@@ -51,9 +51,12 @@ export type NudgeTrigger =
   | { type: "new_member_joined"; withinHours: number }
   | { type: "legacy"; trigger: string } // For backwards compatibility
 
+export const COHORTS = ["New", "Lurker", "Champion"] as const
+export type Cohort = (typeof COHORTS)[number]
+
 export type NudgeTargeting = {
   tiers?: string[]
-  cohorts?: ("New" | "Lurker" | "Champion")[]
+  cohorts?: Cohort[]
   tags?: string[]
 }
 
