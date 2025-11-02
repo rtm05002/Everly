@@ -214,16 +214,18 @@ export function StepList({
                           {step.kind}
                         </Badge>
                         {/* Show channel/bounty name if available */}
-                        {step.kind === "post" && step.config?.channel_id && (
-                          <Badge variant="secondary" className="text-xs">
-                            {channels.find((c) => c.id === step.config.channel_id)?.name || step.config.channel_id}
-                          </Badge>
-                        )}
-                        {step.kind === "custom" && step.config?.bounty_id && (
-                          <Badge variant="secondary" className="text-xs">
-                            {bounties.find((b) => b.id === step.config.bounty_id)?.name || "Bounty"}
-                          </Badge>
-                        )}
+                        {step.kind === "post" && (() => {
+                          const channelId = step.config?.channel_id
+                          if (!channelId) return null
+                          const channel = channels.find(c => c.id === channelId)
+                          return <Badge variant="secondary" className="text-xs">{channel?.name ?? channelId}</Badge>
+                        })()}
+                        {step.kind === "custom" && (() => {
+                          const bountyId = step.config?.bounty_id
+                          if (!bountyId) return null
+                          const bounty = bounties.find(b => b.id === bountyId)
+                          return <Badge variant="secondary" className="text-xs">{bounty?.name ?? "Bounty"}</Badge>
+                        })()}
                         {/* Nudge link */}
                         {step.nudge_recipe_id && (
                           <NudgeLink nudgeRecipeId={step.nudge_recipe_id} hubId={hubId} />
