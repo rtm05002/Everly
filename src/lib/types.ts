@@ -166,7 +166,10 @@ export function mapDbBountyToBounty(dbBounty: DbBounty, participants: number = 0
   return {
     id: dbBounty.id,
     title: dbBounty.name,
-    rewardCents: dbBounty.amount * 100, // Convert from dollars to cents
+    reward: {
+      type: "usd",
+      amount: dbBounty.amount * 100, // Convert from dollars to cents
+    },
     status: dbBounty.status,
     participants,
     deadline: dbBounty.ends_at,
@@ -178,7 +181,7 @@ export function mapBountyToDbBounty(bounty: Bounty): DbBounty {
   return {
     id: bounty.id,
     name: bounty.title,
-    amount: bounty.rewardCents / 100, // Convert from cents to dollars
+    amount: (bounty.reward.amount ?? 0) / 100, // Convert from cents to dollars
     status: bounty.status,
     ends_at: bounty.deadline,
     created_at: bounty.createdAt
