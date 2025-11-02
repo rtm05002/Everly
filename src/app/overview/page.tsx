@@ -87,9 +87,9 @@ async function getActivationRate() {
 }
 
 interface OverviewPageProps {
-  searchParams: {
+  searchParams?: Promise<{
     range?: string
-  }
+  }>
 }
 
 async function OverviewContent({ range }: { range: string }) {
@@ -274,7 +274,8 @@ async function OverviewContent({ range }: { range: string }) {
 }
 
 export default async function OverviewPage({ searchParams }: OverviewPageProps) {
-  const range = searchParams?.range || "60d"
+  const resolvedParams = await searchParams
+  const range = resolvedParams?.range || "60d"
   
   return (
     <Suspense fallback={<Loading />}>
