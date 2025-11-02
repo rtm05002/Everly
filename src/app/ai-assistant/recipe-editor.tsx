@@ -315,7 +315,9 @@ export function RecipeEditor({ recipe, isOpen, onClose, onSave, onTest, hubId }:
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Message Template</CardTitle>
-              <CardDescription>Supports variables: {`{{first_name}}`, `{{community_name}}`, `{{cta_url}}`}</CardDescription>
+              <CardDescription>
+                Supports variables: <code>{`{{first_name}}`}</code>, <code>{`{{community_name}}`}</code>, <code>{`{{cta_url}}`}</code>
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
