@@ -253,7 +253,7 @@ export function StepConfigForm({
     // Parse and validate with Zod schema
     const parseResult = schema.safeParse(data)
     if (!parseResult.success) {
-      setValidationErrors(parseResult.error.errors.map(e => e.message))
+      setValidationErrors(parseResult.error.issues.map(e => e.message))
       return
     }
     
