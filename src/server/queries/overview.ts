@@ -1,7 +1,8 @@
 import { createServiceClient } from "@/server/db"
 import { env } from "@/lib/env"
-import type { SeriesPoint, TrendPoint } from "@/lib/types"
+import type { TrendPoint } from "@/lib/types"
 import type { Event } from "@/lib/types"
+import type { SeriesPoint } from "@/lib/metrics"
 
 function dayKey(d: string | Date): string {
   const x = new Date(d)
