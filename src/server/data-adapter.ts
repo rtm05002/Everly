@@ -756,7 +756,7 @@ const supabaseAdapter: DataAdapter = {
     const sb = createServiceClient()
     const upd: any = {}
     if (patch.title !== undefined) upd.name = patch.title
-    if (patch.rewardCents !== undefined) upd.amount = fromCents(patch.rewardCents)
+    if (patch.reward !== undefined) upd.amount = (patch.reward.amount ?? 0) / 100 // Convert from cents to dollars
     if (patch.status !== undefined) upd.status = patch.status
     if (patch.deadline !== undefined) upd.ends_at = patch.deadline
     const { data, error } = await sb
@@ -800,7 +800,10 @@ const supabaseAdapter: DataAdapter = {
     return {
       id: data.id,
       title: data.name,
-      rewardCents: toCents(data.amount),
+      reward: {
+        type: "usd",
+        amount: data.amount * 100, // Convert from dollars to cents
+      },
       status: data.status,
       participants: 0, // optionally re-count like listBounties()
       deadline: data.ends_at ?? null,
