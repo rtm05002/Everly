@@ -15,10 +15,11 @@ export async function mapWhopEventToDb(hubId: string, evt: WhopEvt) {
   const whop_event_id = evt.id;
 
   switch (evt.type) {
-    case "member.created": {
+    case "member.created":
+    case "membership_activated": {
       const m = evt.data;
       // Upsert member; store whop ids so future syncs can match
-      await s
+      const { error } = await s
         .from("members")
         .upsert(
           {
@@ -29,12 +30,10 @@ export async function mapWhopEventToDb(hubId: string, evt: WhopEvt) {
             last_active_at: ts,
           },
           { onConflict: "hub_id,whop_member_id" }
-        )
-        .catch((error: any) => {
-          if (error?.code !== '23505') {
-            console.error("[Whop Mapper] Error upserting member:", error);
-          }
-        });
+        );
+      if (error && error?.code !== '23505') {
+        console.error("[Whop Mapper] Error upserting member:", error);
+      }
       break;
     }
 
@@ -49,11 +48,10 @@ export async function mapWhopEventToDb(hubId: string, evt: WhopEvt) {
         whop_event_id,
       };
       // idempotent insert
-      await s.from("activity_logs").insert(insert).catch((error: any) => {
-        if (error?.code !== '23505') {
-          console.error("[Whop Mapper] Error inserting message activity:", error);
-        }
-      });
+      const { error } = await s.from("activity_logs").insert(insert);
+      if (error && error?.code !== '23505') {
+        console.error("[Whop Mapper] Error inserting message activity:", error);
+      }
       break;
     }
 
@@ -67,16 +65,16 @@ export async function mapWhopEventToDb(hubId: string, evt: WhopEvt) {
         created_at: ts,
         whop_event_id,
       };
-      await s.from("activity_logs").insert(insert).catch((error: any) => {
-        if (error?.code !== '23505') {
-          console.error("[Whop Mapper] Error inserting payment activity:", error);
-        }
-      });
+      const { error } = await s.from("activity_logs").insert(insert);
+      if (error && error?.code !== '23505') {
+        console.error("[Whop Mapper] Error inserting payment activity:", error);
+      }
       break;
     }
 
     case "challenge.completed": // or "bounty.completed" depending on your naming
-    case "bounty.completed": {
+    case "bounty.completed":
+    case "entry_approved": {
       const d = evt.data;
       const insert = {
         hub_id: hubId,
@@ -87,11 +85,10 @@ export async function mapWhopEventToDb(hubId: string, evt: WhopEvt) {
         created_at: ts,
         whop_event_id,
       };
-      await s.from("bounty_events").insert(insert).catch((error: any) => {
-        if (error?.code !== '23505') {
-          console.error("[Whop Mapper] Error inserting bounty event:", error);
-        }
-      });
+      const { error } = await s.from("bounty_events").insert(insert);
+      if (error && error?.code !== '23505') {
+        console.error("[Whop Mapper] Error inserting bounty event:", error);
+      }
       break;
     }
 
