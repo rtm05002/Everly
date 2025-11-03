@@ -17,6 +17,9 @@ const envSchema = z.object({
   WORKER_SECRET: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_PROJECT: z.string().optional(),
+  WHOP_API_KEY: z.string().optional(),
+  WHOP_ORG_ID: z.string().optional(),
+  WHOP_SYNC_ENABLED: z.enum(['true', 'false']).default('false'),
 })
 
 export const env = envSchema.parse({
@@ -36,4 +39,7 @@ export const env = envSchema.parse({
   WORKER_SECRET: process.env.WORKER_SECRET,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   OPENAI_PROJECT: process.env.OPENAI_PROJECT,
+  WHOP_API_KEY: process.env.WHOP_API_KEY,
+  WHOP_ORG_ID: process.env.WHOP_ORG_ID,
+  WHOP_SYNC_ENABLED: process.env.WHOP_SYNC_ENABLED || 'false',
 })
