@@ -106,6 +106,10 @@ export const RATE_LIMITS = {
   '/api/hub/:hubId/ai/query': {
     windowMs: 60 * 1000, // 1 minute
     maxRequests: 5
+  },
+  '/api/sync/whop': {
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    maxRequests: 1
   }
 } as const
 
