@@ -13,14 +13,12 @@ create table if not exists public.nudge_logs (
   error text,
   attempt int not null default 0,
   scheduled_at timestamptz not null default now(),
+  scheduled_date date generated always as (date(scheduled_at)) stored,
   sent_at timestamptz,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique (hub_id, member_id, recipe_name, message_hash, scheduled_date)
 );
-
--- Add unique constraint for idempotency (same day check)
-create unique index if not exists nudge_logs_unique_idx 
-  on public.nudge_logs (hub_id, member_id, recipe_name, message_hash, date_trunc('day', scheduled_at));
 
 create table if not exists public.nudge_queue (
   id uuid primary key default gen_random_uuid(),
