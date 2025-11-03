@@ -35,13 +35,24 @@ export async function POST(req: NextRequest) {
       upsertSubscriptions([], hubId), // Placeholder
     ])
 
-    return new NextResponse(JSON.stringify({
+    const summary = {
       success: true,
       orgs: orgsCount,
       products: productsCount,
       members: membersCount,
       subscriptions: subsCount,
-    }), {
+    }
+
+    // Record metric (fire-and-forget)
+    try {
+      const { recordMetric } = await import("@/server/metrics")
+      recordMetric('last_backfill_at', { 
+        at: new Date().toISOString(),
+        ...summary
+      }).catch(() => {})
+    } catch {}
+
+    return new NextResponse(JSON.stringify(summary), {
       status: 200,
       headers: { "content-type": "application/json" }
     })

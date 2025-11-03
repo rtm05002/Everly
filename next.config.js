@@ -15,4 +15,15 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+// Conditionally wrap with Sentry if DSN is configured
+let exportConfig = nextConfig
+if (process.env.SENTRY_DSN) {
+  try {
+    const { withSentryConfig } = require('@sentry/nextjs')
+    exportConfig = withSentryConfig(nextConfig, { silent: true })
+  } catch (e) {
+    console.warn('[next.config] Sentry not available:', e.message)
+  }
+}
+
+module.exports = exportConfig

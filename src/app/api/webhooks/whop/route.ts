@@ -30,6 +30,14 @@ export async function POST(req: NextRequest) {
         // OPTIONAL: call onboarding resolver after write
         // import { evaluateStepCompletion } from "@/server/onboarding/resolve";
         // ... evaluate & upsert onboarding_progress ...
+        
+        // Record metric (fire-and-forget)
+        const { recordMetric } = await import("@/server/metrics");
+        recordMetric('last_webhook_at', { 
+          at: new Date().toISOString(), 
+          source: 'whop',
+          type: evt.type 
+        }).catch(() => {});
       } catch (e) {
         console.error("[whop:webhook] map error", (e as Error).message);
       }

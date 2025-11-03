@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       upsertSubscriptions([], hubId), // Placeholder
     ])
 
-    return new NextResponse(JSON.stringify({
+    const summary = {
       success: true,
       windowHours,
       since,
@@ -57,7 +57,18 @@ export async function POST(req: NextRequest) {
       products: productsCount,
       members: membersCount,
       subscriptions: subsCount,
-    }), {
+    }
+
+    // Record metric (fire-and-forget)
+    try {
+      const { recordMetric } = await import("@/server/metrics")
+      recordMetric('last_sync_at', { 
+        at: new Date().toISOString(),
+        ...summary
+      }).catch(() => {})
+    } catch {}
+
+    return new NextResponse(JSON.stringify(summary), {
       status: 200,
       headers: { "content-type": "application/json" }
     })
