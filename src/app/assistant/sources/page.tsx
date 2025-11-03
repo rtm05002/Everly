@@ -2,6 +2,7 @@ import { DashboardLayout } from "@/components/dashboard-layout"
 import { getSourceStats } from "@/server/ai/content-index"
 import { env } from "@/lib/env"
 import { SourcesPanel } from "./sources-panel"
+import { WhopSyncPanel } from "@/components/sources/whop-sync-panel"
 
 export default async function SourcesPage() {
   const hubId = env.DEMO_HUB_ID || ""
@@ -19,6 +20,7 @@ export default async function SourcesPage() {
           </p>
         </div>
 
+        <WhopSyncPanel hubId={hubId} />
         <SourcesPanel initialSources={sources} hubId={hubId} />
       </div>
     </DashboardLayout>

@@ -7,55 +7,45 @@ import type { SourceWithStats, SourceStats, BackfillResult } from "@/lib/ai-inde
 export async function getSourceStats(hubId: string): Promise<SourceWithStats[]> {
   const supabase = createServiceClient()
   
-  // Query the view joined with sources table
-  const { data, error } = await supabase
-    .from('v_ai_source_stats')
-    .select(`
-      source_id,
-      doc_count,
-      chunk_count,
-      last_sync_started_at,
-      last_sync_finished_at,
-      last_sync_status,
-      sources:source_id (
-        id,
-        hub_id,
-        kind,
-        name,
-        config,
-        created_at,
-        updated_at
-      )
-    `)
-    .eq('sources.hub_id', hubId)
+  // First, get all sources for this hub
+  const { data: sources, error: sourcesError } = await supabase
+    .from('ai_sources')
+    .select('*')
+    .eq('hub_id', hubId)
   
-  if (error) {
-    console.error('[Content Index] Error fetching source stats:', error)
+  if (sourcesError || !sources) {
+    console.error('[Content Index] Error fetching sources:', sourcesError)
     return []
   }
   
-  if (!data) {
-    return []
+  // Then get stats for each source
+  const result: SourceWithStats[] = []
+  
+  for (const source of sources) {
+    // Get stats from view
+    const { data: stats } = await supabase
+      .from('v_ai_source_stats')
+      .select('*')
+      .eq('source_id', source.id)
+      .single()
+    
+    result.push({
+      id: source.id,
+      hub_id: source.hub_id,
+      kind: source.kind as any,
+      name: source.name,
+      config: source.config,
+      created_at: source.created_at,
+      updated_at: source.updated_at,
+      doc_count: stats?.doc_count || 0,
+      chunk_count: stats?.chunk_count || 0,
+      last_sync_started_at: stats?.last_sync_started_at || null,
+      last_sync_finished_at: stats?.last_sync_finished_at || null,
+      last_sync_status: stats?.last_sync_status || null,
+    })
   }
   
-  // Transform the joined data into flat objects
-  return data.map((row: any) => {
-    const source = row.sources
-    return {
-      id: source?.id || row.source_id,
-      hub_id: source?.hub_id || hubId,
-      kind: source?.kind || 'forum',
-      name: source?.name || 'Unknown',
-      config: source?.config || null,
-      created_at: source?.created_at || new Date().toISOString(),
-      updated_at: source?.updated_at || new Date().toISOString(),
-      doc_count: row.doc_count || 0,
-      chunk_count: row.chunk_count || 0,
-      last_sync_started_at: row.last_sync_started_at || null,
-      last_sync_finished_at: row.last_sync_finished_at || null,
-      last_sync_status: row.last_sync_status || null,
-    }
-  })
+  return result
 }
 
 /**
