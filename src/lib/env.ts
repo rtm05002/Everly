@@ -11,6 +11,10 @@ const envSchema = z.object({
   FEATURE_ONBOARDING: z.enum(['true', 'false']).default('false'),
   WHOP_WEBHOOK_SECRET: z.string().optional(),
   ADMIN_TASK_TOKEN: z.string().optional(),
+  NUDGES_ENABLED: z.enum(['true', 'false']).default('false'),
+  NUDGE_RATE_LIMIT_WINDOW_HOURS: z.string().optional(),
+  NUDGE_MAX_RETRIES: z.string().optional(),
+  WORKER_SECRET: z.string().optional(),
 })
 
 export const env = envSchema.parse({
@@ -24,4 +28,8 @@ export const env = envSchema.parse({
   FEATURE_ONBOARDING: process.env.FEATURE_ONBOARDING || 'false',
   WHOP_WEBHOOK_SECRET: process.env.WHOP_WEBHOOK_SECRET,
   ADMIN_TASK_TOKEN: process.env.ADMIN_TASK_TOKEN,
+  NUDGES_ENABLED: process.env.NUDGES_ENABLED || 'false',
+  NUDGE_RATE_LIMIT_WINDOW_HOURS: process.env.NUDGE_RATE_LIMIT_WINDOW_HOURS,
+  NUDGE_MAX_RETRIES: process.env.NUDGE_MAX_RETRIES,
+  WORKER_SECRET: process.env.WORKER_SECRET,
 })
