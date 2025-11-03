@@ -2,7 +2,9 @@
 
 ## Quick Test Endpoints
 
-Two debug endpoints are available to help diagnose and test the Whop sync:
+Two debug endpoints are available to help diagnose and test the Whop sync.
+
+**Note:** Preview deployments are password-protected. Test locally or use your production URL.
 
 ### 1. Status Check
 
@@ -10,8 +12,14 @@ Two debug endpoints are available to help diagnose and test the Whop sync:
 
 Shows current environment configuration, connection status, and data counts.
 
+**Local (Recommended):**
 ```bash
-curl https://your-vercel-app.vercel.app/api/debug/whop-status
+curl http://localhost:3000/api/debug/whop-status
+```
+
+**Production:**
+```bash
+curl https://your-production-domain.com/api/debug/whop-status
 ```
 
 **Example Response:**
