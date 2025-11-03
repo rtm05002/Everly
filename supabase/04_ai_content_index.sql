@@ -21,7 +21,8 @@ create table if not exists public.ai_docs (
   url text,
   hash text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique(source_id, external_id)  -- Allow idempotent upserts
 );
 
 -- ai_chunks: Text chunks with embeddings
@@ -32,7 +33,8 @@ create table if not exists public.ai_chunks (
   content text not null,
   embedding vector(1536),
   token_count int,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique(doc_id, idx)  -- One chunk per index per doc
 );
 
 -- ai_sync_runs: Sync job history
@@ -45,9 +47,8 @@ create table if not exists public.ai_sync_runs (
   finished_at timestamptz
 );
 
--- Indexes
-create index if not exists idx_ai_docs_source_external on public.ai_docs(source_id, external_id);
-create index if not exists idx_ai_chunks_doc_idx on public.ai_chunks(doc_id, idx);
+-- Additional indexes (unique constraints above also create indexes)
+create index if not exists idx_ai_docs_hash on public.ai_docs(hash);
 create index if not exists idx_ai_chunks_embedding on public.ai_chunks using ivfflat (embedding vector_cosine_ops) with (lists = 100);
 
 -- View: Source statistics
