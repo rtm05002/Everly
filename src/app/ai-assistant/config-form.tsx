@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AIConfig, NudgeRecipe } from "@/lib/types"
 import { saveAIConfig } from "./actions"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, Database } from "lucide-react"
 import { toast } from "sonner"
+import Link from "next/link"
 
 interface ConfigFormProps {
   initialConfig: AIConfig
@@ -138,6 +139,23 @@ export function ConfigForm({ initialConfig }: ConfigFormProps) {
             />
           </div>
         </div>
+      </div>
+
+      {/* Content Sources Section */}
+      <div className="bg-gradient-to-br from-green-50/50 to-green-100/30 rounded-xl p-6 border border-green-200/50">
+        <h3 className="text-sm font-semibold text-green-900 mb-4 flex items-center gap-2">
+          <div className="w-1 h-4 bg-green-600 rounded-full" />
+          Content Sources
+        </h3>
+        <p className="text-sm text-green-800 mb-4">
+          Manage knowledge base sources for AI-powered responses
+        </p>
+        <Link href="/assistant/sources">
+          <Button variant="outline" className="bg-white">
+            <Database className="h-4 w-4 mr-2" />
+            Manage Sources
+          </Button>
+        </Link>
       </div>
 
       <div className="flex justify-end pt-4 border-t border-border/50">
