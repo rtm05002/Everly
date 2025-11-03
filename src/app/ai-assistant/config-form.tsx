@@ -72,8 +72,8 @@ export function ConfigForm({ initialConfig }: ConfigFormProps) {
   return (
     <div className="space-y-6">
       {/* Settings Section */}
-      <div className="bg-gradient-to-br from-blue-50/50 to-blue-100/30 rounded-xl p-6 border border-blue-200/50">
-        <h3 className="text-sm font-semibold text-blue-900 mb-4 flex items-center gap-2">
+      <div className="bg-gradient-to-br from-blue-50/50 to-blue-100/30 dark:from-blue-950/20 dark:to-blue-900/10 rounded-xl p-6 border border-blue-200/50 dark:border-blue-800/30">
+        <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-4 flex items-center gap-2">
           <div className="w-1 h-4 bg-blue-600 rounded-full" />
           AI Settings
         </h3>
@@ -81,7 +81,7 @@ export function ConfigForm({ initialConfig }: ConfigFormProps) {
           <div className="space-y-2">
             <Label htmlFor="mode" className="text-sm font-medium">AI Mode</Label>
             <Select value={config.mode} onValueChange={(value: any) => updateConfig({ mode: value })}>
-              <SelectTrigger className="bg-white">
+              <SelectTrigger className="bg-white dark:bg-card">
                 <SelectValue placeholder="Select AI mode" />
               </SelectTrigger>
               <SelectContent>
@@ -95,7 +95,7 @@ export function ConfigForm({ initialConfig }: ConfigFormProps) {
           <div className="space-y-2">
             <Label htmlFor="tone" className="text-sm font-medium">Tone</Label>
             <Select value={config.tone} onValueChange={(value: any) => updateConfig({ tone: value })}>
-              <SelectTrigger className="bg-white">
+              <SelectTrigger className="bg-white dark:bg-card">
                 <SelectValue placeholder="Select tone" />
               </SelectTrigger>
               <SelectContent>
@@ -109,8 +109,8 @@ export function ConfigForm({ initialConfig }: ConfigFormProps) {
       </div>
 
       {/* Content Filtering Section */}
-      <div className="bg-gradient-to-br from-red-50/50 to-red-100/30 rounded-xl p-6 border border-red-200/50">
-        <h3 className="text-sm font-semibold text-red-900 mb-4 flex items-center gap-2">
+      <div className="bg-gradient-to-br from-red-50/50 to-red-100/30 dark:from-red-950/20 dark:to-red-900/10 rounded-xl p-6 border border-red-200/50 dark:border-red-800/30">
+        <h3 className="text-sm font-semibold text-red-900 dark:text-red-100 mb-4 flex items-center gap-2">
           <div className="w-1 h-4 bg-red-600 rounded-full" />
           Content Filtering
         </h3>
@@ -123,7 +123,7 @@ export function ConfigForm({ initialConfig }: ConfigFormProps) {
               onChange={(e) => updateBannedPhrases(e.target.value)}
               placeholder="spam&#10;hate speech&#10;harassment"
               rows={3}
-              className="bg-white"
+              className="bg-white dark:bg-card"
             />
           </div>
 
@@ -135,23 +135,23 @@ export function ConfigForm({ initialConfig }: ConfigFormProps) {
               onChange={(e) => updateEscalateIf(e.target.value)}
               placeholder="threats&#10;illegal content&#10;repeated violations"
               rows={3}
-              className="bg-white"
+              className="bg-white dark:bg-card"
             />
           </div>
         </div>
       </div>
 
       {/* Content Sources Section */}
-      <div className="bg-gradient-to-br from-green-50/50 to-green-100/30 rounded-xl p-6 border border-green-200/50">
-        <h3 className="text-sm font-semibold text-green-900 mb-4 flex items-center gap-2">
+      <div className="bg-gradient-to-br from-green-50/50 to-green-100/30 dark:from-green-950/20 dark:to-green-900/10 rounded-xl p-6 border border-green-200/50 dark:border-green-800/30">
+        <h3 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-4 flex items-center gap-2">
           <div className="w-1 h-4 bg-green-600 rounded-full" />
           Content Sources
         </h3>
-        <p className="text-sm text-green-800 mb-4">
+        <p className="text-sm text-green-800 dark:text-green-300 mb-4">
           Manage knowledge base sources for AI-powered responses
         </p>
         <Link href="/assistant/sources">
-          <Button variant="outline" className="bg-white">
+          <Button variant="outline" className="bg-white dark:bg-card">
             <Database className="h-4 w-4 mr-2" />
             Manage Sources
           </Button>
