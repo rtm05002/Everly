@@ -10,6 +10,7 @@ const envSchema = z.object({
   FEATURE_NUDGES: z.enum(['true', 'false']).default('true'),
   FEATURE_ONBOARDING: z.enum(['true', 'false']).default('false'),
   WHOP_WEBHOOK_SECRET: z.string().optional(),
+  ADMIN_TASK_TOKEN: z.string().optional(),
 })
 
 export const env = envSchema.parse({
@@ -22,4 +23,5 @@ export const env = envSchema.parse({
   FEATURE_NUDGES: process.env.FEATURE_NUDGES || 'true',
   FEATURE_ONBOARDING: process.env.FEATURE_ONBOARDING || 'false',
   WHOP_WEBHOOK_SECRET: process.env.WHOP_WEBHOOK_SECRET,
+  ADMIN_TASK_TOKEN: process.env.ADMIN_TASK_TOKEN,
 })
