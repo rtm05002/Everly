@@ -1,7 +1,10 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
 import type { NudgeLog } from '@/lib/nudge-types'
 import { getSupabaseServer } from '@/lib/supabase-server'
 import { NudgeLogsClient } from '@/components/admin/nudge-logs-client'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft } from 'lucide-react'
 
 async function getInitialLogs(): Promise<NudgeLog[]> {
   try {
@@ -30,6 +33,14 @@ export default async function Page() {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
+        <div className="flex items-center gap-4 mb-2">
+          <Link href="/ai-assistant">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to AI Assistant
+            </Button>
+          </Link>
+        </div>
         <h1 className="text-3xl font-bold">Nudge Delivery Logs</h1>
         <p className="text-muted-foreground mt-2">Track all nudge delivery attempts</p>
       </div>
