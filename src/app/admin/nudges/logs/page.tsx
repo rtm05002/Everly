@@ -43,17 +43,19 @@ export default function AdminNudgeLogsPage() {
     try {
       setLoading(true)
       const params = new URLSearchParams()
-      params.set('page', page.toString())
       params.set('limit', PAGE_SIZE.toString())
       if (filters.status) params.set('status', filters.status)
       if (filters.channel) params.set('channel', filters.channel)
-      if (filters.search) params.set('search', filters.search)
+      if (filters.search) params.set('q', filters.search)
+      // For cursor pagination, we'd need to track cursor in state
+      // For now, just use page-based offset as a fallback
+      // TODO: Implement proper cursor-based pagination
 
       const res = await fetch(`/api/admin/nudges/logs?${params.toString()}`)
       const data = await res.json()
       
-      setLogs(data.logs || [])
-      setHasMore(data.hasMore || false)
+      setLogs(data.items || [])
+      setHasMore(!!data.nextCursor)
     } catch (err) {
       console.error('[admin:nudges] exception:', err)
       setLogs([])

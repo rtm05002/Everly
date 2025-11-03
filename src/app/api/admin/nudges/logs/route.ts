@@ -10,17 +10,17 @@ export async function GET(req: NextRequest) {
     const supabase = getSupabaseServer()
     const { searchParams } = new URL(req.url)
     
-    const page = parseInt(searchParams.get('page') || '0')
-    const limit = parseInt(searchParams.get('limit') || '20')
     const status = searchParams.get('status')
     const channel = searchParams.get('channel')
-    const search = searchParams.get('search')
+    const recipe = searchParams.get('recipe')
+    const q = searchParams.get('q') || searchParams.get('search') // support both params
+    const cursor = searchParams.get('cursor')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
     
     let query = supabase
       .from('nudge_logs')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .range(page * limit, (page + 1) * limit - 1)
     
     // Apply filters
     if (status) {
@@ -29,23 +29,32 @@ export async function GET(req: NextRequest) {
     if (channel) {
       query = query.eq('channel', channel)
     }
-    if (search) {
-      query = query.or(`member_name.ilike.%${search}%,recipe_name.ilike.%${search}%`)
+    if (recipe) {
+      query = query.eq('recipe_id', recipe)
+    }
+    if (q) {
+      query = query.or(`member_name.ilike.%${q}%,message_preview.ilike.%${q}%`)
     }
     
-    const { data, error } = await query
+    // Cursor-based pagination
+    if (cursor) {
+      query = query.lt('created_at', cursor)
+    }
+    
+    const { data, error } = await query.limit(limit)
     
     if (error) {
       console.error('[admin:nudges] error fetching logs:', error)
-      return NextResponse.json({ logs: [], hasMore: false }, { status: 500 })
+      return NextResponse.json({ items: [], nextCursor: null }, { status: 500 })
     }
     
-    const hasMore = (data || []).length === limit
+    const items = (data || [])
+    const nextCursor = items.length > 0 ? items[items.length - 1].created_at : null
     
-    return NextResponse.json({ logs: data || [], hasMore })
+    return NextResponse.json({ items, nextCursor })
   } catch (err) {
     console.error('[admin:nudges] exception:', err)
-    return NextResponse.json({ logs: [], hasMore: false }, { status: 500 })
+    return NextResponse.json({ items: [], nextCursor: null }, { status: 500 })
   }
 }
 
