@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { useState, useTransition, useEffect } from "react"
 import {
   Select,
@@ -25,6 +25,7 @@ interface OverviewPageClientProps {
 
 export function OverviewPageClient({ children, defaultRange = "60d" }: OverviewPageClientProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
   const [range, setRange] = useState(searchParams.get("range") || defaultRange)
@@ -42,7 +43,7 @@ export function OverviewPageClient({ children, defaultRange = "60d" }: OverviewP
     startTransition(() => {
       const params = new URLSearchParams(searchParams.toString())
       params.set("range", newRange)
-      router.push(`/?${params.toString()}`, { scroll: false })
+      router.push(`${pathname}?${params.toString()}`, { scroll: false })
     })
   }
 
