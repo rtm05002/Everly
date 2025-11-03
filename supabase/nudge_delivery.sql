@@ -13,11 +13,9 @@ create table if not exists public.nudge_logs (
   error text,
   attempt int not null default 0,
   scheduled_at timestamptz not null default now(),
-  scheduled_date timestamptz generated always as (date_trunc('day', scheduled_at)) stored,
   sent_at timestamptz,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (hub_id, member_id, recipe_name, message_hash, scheduled_date)
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.nudge_queue (
