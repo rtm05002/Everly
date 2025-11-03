@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter, useSearchParams } from "next/navigation"
-import { useState, useTransition } from "react"
+import { useState, useTransition, useEffect } from "react"
 import {
   Select,
   SelectContent,
@@ -28,6 +28,14 @@ export function OverviewPageClient({ children, defaultRange = "60d" }: OverviewP
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
   const [range, setRange] = useState(searchParams.get("range") || defaultRange)
+
+  // Sync local state with URL params when they change
+  useEffect(() => {
+    const urlRange = searchParams.get("range")
+    if (urlRange && urlRange !== range) {
+      setRange(urlRange)
+    }
+  }, [searchParams])
 
   const handleRangeChange = (newRange: string) => {
     setRange(newRange)

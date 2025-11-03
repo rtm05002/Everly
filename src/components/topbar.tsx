@@ -1,6 +1,6 @@
 ﻿"use client"
 
-import { Search, Plus, Bell, Menu, Moon, Sun, Filter } from "lucide-react"
+import { Search, Bell, Menu, Moon, Sun, Filter } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
@@ -57,12 +57,6 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive animate-pulse" />
-          </Button>
-
-          {/* Create button */}
-          <Button className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/ shadow-lg shadow-primary/ transition-all hover:shadow-xl hover:shadow-primary/">
-            <Plus className="mr-2 h-4 w-4" />
-            Create
           </Button>
 
           <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-primary/ ring-2 ring-primary/" />
