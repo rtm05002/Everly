@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Bot, Trophy, Users, TrendingUp, BarChart3, Settings, ChevronDown, Zap, ExternalLink, ListTodo } from "lucide-react"
+import { LayoutDashboard, Bot, Trophy, Users, TrendingUp, BarChart3, Settings, ChevronDown, Zap, ExternalLink, ListTodo, Database } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { env } from "@/lib/env"
@@ -13,6 +13,7 @@ const navigationSections = [
     items: [
       { name: "Overview", href: "/", icon: LayoutDashboard },
       { name: "AI Assistant", href: "/ai-assistant", icon: Bot },
+      { name: "Content Sources", href: "/assistant/sources", icon: Database },
       { name: "Bounties", href: "/bounties", icon: Trophy },
       ...(env.FEATURE_ONBOARDING ? [{ name: "Onboarding", href: "/onboarding", icon: ListTodo }] : []),
     ],
