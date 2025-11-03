@@ -2,15 +2,22 @@ import { getWhopClient } from "@/lib/whop"
 import { env } from "@/lib/env"
 import { paginate } from "./client"
 import { mapWhopProducts, mapWhopMembers } from "./mappers"
+import { getMockProducts, getMockMembers, getMockSubscriptions } from "./mock"
 
 /**
  * Fetch all Whop products with pagination
  */
 export async function fetchWhopProducts(hubId: string): Promise<any[]> {
+  // Check if we should use mock data
+  if (!env.WHOP_API_KEY || !env.WHOP_ORG_ID) {
+    console.log("[Whop Fetchers] Using mock products (no credentials)")
+    return getMockProducts(hubId)
+  }
+
   const client = getWhopClient()
   if (!client) {
-    console.warn("[Whop Fetchers] Client not available")
-    return []
+    console.warn("[Whop Fetchers] Client not available, falling back to mock")
+    return getMockProducts(hubId)
   }
 
   try {
@@ -23,7 +30,8 @@ export async function fetchWhopProducts(hubId: string): Promise<any[]> {
     return await paginate(fn)
   } catch (error: any) {
     console.error("[Whop Fetchers] Error fetching products:", error.message)
-    return []
+    console.log("[Whop Fetchers] Falling back to mock products")
+    return getMockProducts(hubId)
   }
 }
 
@@ -31,10 +39,16 @@ export async function fetchWhopProducts(hubId: string): Promise<any[]> {
  * Fetch all Whop members with pagination
  */
 export async function fetchWhopMembers(hubId: string): Promise<any[]> {
+  // Check if we should use mock data
+  if (!env.WHOP_API_KEY || !env.WHOP_ORG_ID) {
+    console.log("[Whop Fetchers] Using mock members (no credentials)")
+    return getMockMembers(hubId)
+  }
+
   const client = getWhopClient()
   if (!client) {
-    console.warn("[Whop Fetchers] Client not available")
-    return []
+    console.warn("[Whop Fetchers] Client not available, falling back to mock")
+    return getMockMembers(hubId)
   }
 
   try {
@@ -46,7 +60,8 @@ export async function fetchWhopMembers(hubId: string): Promise<any[]> {
     return await paginate(fn)
   } catch (error: any) {
     console.error("[Whop Fetchers] Error fetching members:", error.message)
-    return []
+    console.log("[Whop Fetchers] Falling back to mock members")
+    return getMockMembers(hubId)
   }
 }
 
@@ -54,10 +69,16 @@ export async function fetchWhopMembers(hubId: string): Promise<any[]> {
  * Fetch all Whop subscriptions/orders with pagination
  */
 export async function fetchWhopSubscriptions(hubId: string): Promise<any[]> {
+  // Check if we should use mock data
+  if (!env.WHOP_API_KEY || !env.WHOP_ORG_ID) {
+    console.log("[Whop Fetchers] Using mock subscriptions (no credentials)")
+    return getMockSubscriptions(hubId)
+  }
+
   const client = getWhopClient()
   if (!client) {
-    console.warn("[Whop Fetchers] Client not available")
-    return []
+    console.warn("[Whop Fetchers] Client not available, falling back to mock")
+    return getMockSubscriptions(hubId)
   }
 
   try {
@@ -76,11 +97,12 @@ export async function fetchWhopSubscriptions(hubId: string): Promise<any[]> {
       return await paginate(fn)
     }
     
-    console.warn("[Whop Fetchers] Subscriptions endpoint not found")
-    return []
+    console.warn("[Whop Fetchers] Subscriptions endpoint not found, falling back to mock")
+    return getMockSubscriptions(hubId)
   } catch (error: any) {
     console.error("[Whop Fetchers] Error fetching subscriptions:", error.message)
-    return []
+    console.log("[Whop Fetchers] Falling back to mock subscriptions")
+    return getMockSubscriptions(hubId)
   }
 }
 
