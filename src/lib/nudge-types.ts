@@ -2,27 +2,30 @@
  * Shared types for nudge delivery system
  */
 
-export type NudgeStatus = 'queued' | 'sent' | 'failed' | 'skipped'
+export type NudgeLogStatus = 'queued' | 'sent' | 'failed' | 'skipped'
+export type NudgeChannel = 'email' | 'dm' | 'announcement' | 'push' | 'webhook' | 'stub'
 
 export interface NudgeLog {
   id: string
   hub_id: string
-  member_id: string
-  member_name?: string | null
   recipe_id?: string | null
   recipe_name: string
+  member_id: string
+  member_name?: string | null
   channel: string
-  message: string
   message_preview?: string | null
-  message_hash: string
-  status: NudgeStatus
+  status: NudgeLogStatus
+  attempts: number
   error: string | null
-  attempt: number
-  attempts?: number // alias for attempt
-  scheduled_at: string
   sent_at: string | null
   created_at: string
-  updated_at: string
+  
+  // Legacy fields (for backward compatibility with existing code)
+  message?: string
+  message_hash?: string
+  attempt?: number
+  scheduled_at?: string
+  updated_at?: string
 }
 
 export interface NudgeQueueItem {

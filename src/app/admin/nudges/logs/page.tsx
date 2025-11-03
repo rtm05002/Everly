@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import type { NudgeLog, NudgeStatus } from "@/lib/nudge-types"
+import type { NudgeLog, NudgeLogStatus } from "@/lib/nudge-types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
