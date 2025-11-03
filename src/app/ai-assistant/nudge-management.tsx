@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -759,10 +760,12 @@ export function NudgeManagement({ hubId }: NudgeManagementProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="font-medium">Recent Runs</h4>
-              <Button variant="outline" size="sm">
-                <Calendar className="h-4 w-4 mr-2" />
-                View All Logs
-              </Button>
+              <Link href="/admin/nudges/logs">
+                <Button variant="outline" size="sm">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  View All Logs
+                </Button>
+              </Link>
             </div>
             
             <div className="space-y-2">

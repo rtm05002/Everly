@@ -8,13 +8,17 @@ export interface NudgeLog {
   id: string
   hub_id: string
   member_id: string
+  member_name?: string | null
+  recipe_id?: string | null
   recipe_name: string
   channel: string
   message: string
+  message_preview?: string | null
   message_hash: string
   status: NudgeStatus
   error: string | null
   attempt: number
+  attempts?: number // alias for attempt
   scheduled_at: string
   sent_at: string | null
   created_at: string
