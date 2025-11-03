@@ -15,6 +15,8 @@ const envSchema = z.object({
   NUDGE_RATE_LIMIT_WINDOW_HOURS: z.string().optional(),
   NUDGE_MAX_RETRIES: z.string().optional(),
   WORKER_SECRET: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_PROJECT: z.string().optional(),
 })
 
 export const env = envSchema.parse({
@@ -32,4 +34,6 @@ export const env = envSchema.parse({
   NUDGE_RATE_LIMIT_WINDOW_HOURS: process.env.NUDGE_RATE_LIMIT_WINDOW_HOURS,
   NUDGE_MAX_RETRIES: process.env.NUDGE_MAX_RETRIES,
   WORKER_SECRET: process.env.WORKER_SECRET,
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  OPENAI_PROJECT: process.env.OPENAI_PROJECT,
 })
