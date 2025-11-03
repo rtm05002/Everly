@@ -78,23 +78,21 @@ export function NudgeLogsClient({ initial }: { initial: NudgeLog[] }) {
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
-        <Select value={status} onValueChange={setStatus}>
+        <Select value={status || undefined} onValueChange={setStatus}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All</SelectItem>
             {STATUS.map(s => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={channel} onValueChange={setChannel}>
+        <Select value={channel || undefined} onValueChange={setChannel}>
           <SelectTrigger className="w-44">
             <SelectValue placeholder="All Channels" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All</SelectItem>
             {CHANNELS.map(c => (
               <SelectItem key={c} value={c}>{c}</SelectItem>
             ))}
