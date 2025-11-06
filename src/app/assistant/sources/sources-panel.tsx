@@ -19,6 +19,7 @@ import { toast } from "sonner"
 import { MoreVertical, RefreshCw, AlertCircle, Plus } from "lucide-react"
 import type { SourceWithStats } from "@/lib/ai-index-types"
 import { formatDistanceToNow } from "date-fns"
+import { AddSourceDialog } from "@/components/sources/add-source-dialog"
 
 interface SourcesPanelProps {
   initialSources: SourceWithStats[]
@@ -34,19 +35,19 @@ export function SourcesPanel({ initialSources, hubId }: SourcesPanelProps) {
   const refreshSources = React.useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/assistant/sources', {
+      const res = await fetch(`/api/assistant/sources?hub_id=${encodeURIComponent(hubId)}`, {
         cache: 'no-store',
       })
       if (res.ok) {
         const data = await res.json()
-        setSources(data)
+        setSources(data.sources || data)
       }
     } catch (err) {
       console.error('[Sources Panel] Refresh error:', err)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [hubId])
 
   const handleSync = async (sourceId: string) => {
     const source = sources.find(s => s.id === sourceId)
@@ -109,41 +110,40 @@ export function SourcesPanel({ initialSources, hubId }: SourcesPanelProps) {
     }
   }
 
-  // Empty state
-  if (sources.length === 0) {
-    return (
-      <div className="card-elevated p-12 text-center">
-        <div className="max-w-md mx-auto">
-          <p className="text-lg font-medium mb-2">No sources yet</p>
-          <p className="text-muted-foreground mb-6">
-            Add content sources to power your AI assistant
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Button variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Whop Source
-            </Button>
-            <Button variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Add URL Source
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-4">
-      {sources.map((source) => (
-        <SourceCard
-          key={source.id}
-          source={source}
-          isSyncing={syncing.has(source.id)}
-          onSync={() => handleSync(source.id)}
-          onBackfill={handleBackfill}
-        />
-      ))}
+      {/* Add Source buttons - always visible */}
+      <div className="flex gap-2 pb-4 border-b border-border">
+        <AddSourceDialog hubId={hubId} kind="url" onSuccess={refreshSources}>
+          <Button variant="outline" size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Add URL Source
+          </Button>
+        </AddSourceDialog>
+        <AddSourceDialog hubId={hubId} kind="whop_product" onSuccess={refreshSources}>
+          <Button variant="outline" size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Whop Source
+          </Button>
+        </AddSourceDialog>
+      </div>
+
+      {/* Sources list */}
+      {sources.length === 0 ? (
+        <div className="card-elevated p-12 text-center">
+          <p className="text-muted-foreground">No sources yet. Add one above to get started.</p>
+        </div>
+      ) : (
+        sources.map((source) => (
+          <SourceCard
+            key={source.id}
+            source={source}
+            isSyncing={syncing.has(source.id)}
+            onSync={() => handleSync(source.id)}
+            onBackfill={handleBackfill}
+          />
+        ))
+      )}
     </div>
   )
 }
