@@ -20,6 +20,9 @@ const envSchema = z.object({
   WHOP_API_KEY: z.string().optional(),
   WHOP_ORG_ID: z.string().optional(),
   WHOP_SYNC_ENABLED: z.enum(['true', 'false']).default('false'),
+  ENABLE_URL_FETCHER: z.enum(['true', 'false']).default('false'),
+  EMBEDDING_MODEL: z.string().optional(),
+  MAX_URL_PAGES: z.string().optional(),
 })
 
 export const env = envSchema.parse({
@@ -42,4 +45,7 @@ export const env = envSchema.parse({
   WHOP_API_KEY: process.env.WHOP_API_KEY,
   WHOP_ORG_ID: process.env.WHOP_ORG_ID,
   WHOP_SYNC_ENABLED: (process.env.WHOP_SYNC_ENABLED || 'false').toLowerCase(),
+  ENABLE_URL_FETCHER: (process.env.ENABLE_URL_FETCHER || 'false').toLowerCase(),
+  EMBEDDING_MODEL: process.env.EMBEDDING_MODEL,
+  MAX_URL_PAGES: process.env.MAX_URL_PAGES,
 })

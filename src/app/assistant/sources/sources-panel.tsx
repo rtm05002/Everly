@@ -49,22 +49,37 @@ export function SourcesPanel({ initialSources, hubId }: SourcesPanelProps) {
   }, [])
 
   const handleSync = async (sourceId: string) => {
+    const source = sources.find(s => s.id === sourceId)
+    if (!source) return
+
     setSyncing(prev => new Set(prev).add(sourceId))
     try {
-      const res = await fetch(`/api/assistant/sources/${sourceId}/sync`, {
+      // Route to URL sync for URL sources, otherwise use regular sync
+      const endpoint = source.kind === 'url' 
+        ? `/api/assistant/sources/${sourceId}/url-sync`
+        : `/api/assistant/sources/${sourceId}/sync`
+      
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hub_id: hubId }),
       })
       
-      if (!res.ok) {
-        throw new Error('Sync failed')
+      const data = await res.json()
+      
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Sync failed')
       }
       
-      toast.success('Sync started successfully')
+      if (source.kind === 'url') {
+        toast.success(`Indexed ${data.totalDocs || 0} docs, ${data.totalChunks || 0} chunks`)
+      } else {
+        toast.success('Sync started successfully')
+      }
+      
       await refreshSources()
-    } catch (err) {
-      toast.error('Failed to start sync')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to start sync')
     } finally {
       setSyncing(prev => {
         const next = new Set(prev)

@@ -2,7 +2,15 @@
  * Shared types for AI Content Index system
  */
 
-export type SourceKind = 'forum' | 'doc' | 'announcement' | 'faq'
+export type SourceKind = 'whop_product' | 'whop_forum' | 'whop_doc' | 'url' | 'forum' | 'doc' | 'announcement' | 'faq' | string
+
+export interface UrlSourceSettings {
+  start_urls: string[]
+  allow_patterns?: string[]
+  deny_patterns?: string[]
+  follow_sitemaps?: boolean
+  max_pages?: number
+}
 
 export interface SourceRow {
   id: string
@@ -10,6 +18,10 @@ export interface SourceRow {
   kind: SourceKind
   name: string
   config: Record<string, any> | null
+  settings?: Record<string, any> | null
+  last_synced_at?: string | null
+  doc_count?: number
+  chunk_count?: number
   created_at: string
   updated_at: string
 }
@@ -38,6 +50,7 @@ export interface DocRow {
   title: string | null
   url: string | null
   hash: string | null
+  content_hash?: string | null
   created_at: string
   updated_at: string
 }
@@ -49,6 +62,7 @@ export interface ChunkRow {
   content: string
   embedding: number[] | null
   token_count: number | null
+  needs_embedding?: boolean
   created_at: string
 }
 
