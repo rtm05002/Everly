@@ -1,6 +1,6 @@
 ﻿import { NextRequest } from "next/server";
 import { getSupabaseServer } from "./supabase-server";
-import { verifyJWT } from "./jwt";
+import { verifyToken } from "./auth/session";
 
 export async function getCurrentUser(request: NextRequest) {
   const supabase = getSupabaseServer();
@@ -18,17 +18,14 @@ export function requireAuth(handler: Function) {
   };
 }
 
-export function parseMemberFromToken(token: string): { hub_id: string; role: string; member_id: string; exp: number; iat: number } | null {
-  const secret = process.env.JWT_SIGNING_SECRET || "devsecret";
-  const payload = verifyJWT(token, secret);
+export function parseMemberFromToken(token: string): { hub_id: string; role: string; member_id: string; exp?: number } | null {
+  const payload = verifyToken(token);
   if (!payload) return null;
-  // Extract only the fields we need
   return {
     hub_id: payload.hub_id,
     role: payload.role,
     member_id: payload.member_id,
     exp: payload.exp,
-    iat: payload.iat,
   };
 }
 

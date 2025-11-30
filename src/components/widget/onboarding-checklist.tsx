@@ -76,7 +76,7 @@ export function OnboardingChecklist({ hubId }: OnboardingChecklistProps) {
         const sessionRes = await fetch('/api/widget/session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hubId, memberId: 'demo-member-id' })
+          body: JSON.stringify({ hubId, memberId: '00000000-0000-0000-0000-000000000001' })
         })
         if (sessionRes.ok) {
           const { memberId: mid } = await sessionRes.json()

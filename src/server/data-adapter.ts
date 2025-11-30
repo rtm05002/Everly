@@ -1,6 +1,7 @@
 import { Stats, Bounty, Member, Event, TrendPoint, normalizeStats, BountyReward } from '@/lib/types'
 import { read, write } from './store'
 import { env } from '@/lib/env'
+import { DEMO_MODE, DEMO_HUB_ID, serverEnv } from '@/lib/env.server'
 import { createServiceClient } from './db'
 import { whopAdapter } from './adapters/whopAdapter'
 import { whopEmulatedAdapter } from './adapters/whopEmulatedAdapter'
@@ -871,12 +872,20 @@ const supabaseAdapter: DataAdapter = {
 }
 
 // Select adapter based on DATA_BACKEND environment variable
+// In demo mode, always use whop-emulated adapter
+const rawBackend = serverEnv.DATA_BACKEND ?? process.env.DATA_BACKEND ?? "file"
+const effectiveBackend = DEMO_MODE ? "whop-emulated" : rawBackend
+
+if (DEMO_MODE && !DEMO_HUB_ID) {
+  console.warn("DEMO_MODE enabled but DEMO_HUB_ID missing")
+}
+
 const adapter =
-  env.DATA_BACKEND === "db"
+  effectiveBackend === "db"
     ? supabaseAdapter
-    : env.DATA_BACKEND === "whop"
+    : effectiveBackend === "whop"
     ? whopAdapter
-    : env.DATA_BACKEND === "whop-emulated"
+    : effectiveBackend === "whop-emulated"
     ? whopEmulatedAdapter
     : mockAdapter
 
@@ -888,8 +897,13 @@ if (typeof window === "undefined") {
     "whop-emulated": "Whop Emulator",
     file: "File (Mock)",
   }
-  const backendName = backendMap[env.DATA_BACKEND] || "File (Mock)"
-  console.log(`[Data Adapter] Using ${backendName} backend (DATA_BACKEND=${env.DATA_BACKEND})`)
+  const backendName = backendMap[effectiveBackend] || "File (Mock)"
+  const modeNote = DEMO_MODE ? " (DEMO_MODE forced)" : ""
+  console.log(`[Data Adapter] Using ${backendName} backend (DATA_BACKEND=${effectiveBackend}${modeNote})`)
+}
+
+export function getAdapter(): DataAdapter {
+  return adapter
 }
 
 export { adapter }

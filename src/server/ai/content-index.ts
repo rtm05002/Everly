@@ -84,13 +84,17 @@ export async function backfillSourceStats(hubId: string): Promise<BackfillResult
         // TODO: When content is available, compute and update hashes
       }
       
-      // Verify chunk counts
-      const { data: chunkStats } = await supabase
+      // Verify chunk counts (only for this source's docs)
+      const { count: chunkCount, error: chunkError } = await supabase
         .from('ai_chunks')
-        .select('doc_id', { count: 'exact', head: false })
+        .select('*', { count: 'exact', head: true })
+        .in('doc_id', 
+          // Get doc IDs for this source first
+          supabase.from('ai_docs').select('id').eq('source_id', source.id)
+        )
       
-      if (chunkStats) {
-        verifiedChunks += chunkStats.length
+      if (!chunkError && chunkCount !== null) {
+        verifiedChunks += chunkCount
       }
     }
     

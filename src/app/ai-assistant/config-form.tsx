@@ -10,15 +10,18 @@ import { AIConfig, NudgeRecipe } from "@/lib/types"
 import { saveAIConfig } from "./actions"
 import { Plus, Trash2, Database } from "lucide-react"
 import { toast } from "sonner"
+import SourcesPanel from "@/components/sources/SourcesPanel"
 import Link from "next/link"
 
 interface ConfigFormProps {
   initialConfig: AIConfig
+  hubId: string
 }
 
-export function ConfigForm({ initialConfig }: ConfigFormProps) {
+export function ConfigForm({ initialConfig, hubId }: ConfigFormProps) {
   const [config, setConfig] = useState<AIConfig>(initialConfig)
   const [isSaving, setIsSaving] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -150,13 +153,39 @@ export function ConfigForm({ initialConfig }: ConfigFormProps) {
         <p className="text-sm text-green-800 dark:text-green-300 mb-4">
           Manage knowledge base sources for AI-powered responses
         </p>
-        <Link href="/assistant/sources">
-          <Button variant="outline" className="bg-white dark:bg-card">
-            <Database className="h-4 w-4 mr-2" />
-            Manage Sources
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
+          >
+            Open preview
+          </button>
+          <a
+            href="/assistant/sources"
+            className="text-sm font-medium underline-offset-2 hover:underline"
+          >
+            Open full manager
+          </a>
+        </div>
       </div>
+
+      {previewOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="w-[900px] max-w-[95vw] rounded-xl bg-white p-4 shadow-lg">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-base font-semibold">Content Sources — Preview</h3>
+              <button
+                onClick={() => setPreviewOpen(false)}
+                className="text-sm opacity-70 hover:opacity-100"
+              >
+                Close
+              </button>
+            </div>
+            <SourcesPanel mode="preview" hubId={hubId} />
+          </div>
+        </div>
+      ) : null}
 
       <div className="flex justify-end pt-4 border-t border-border/50">
         <Button onClick={handleSave} disabled={isSaving} className="bg-primary hover:bg-primary/90 shadow-sm">

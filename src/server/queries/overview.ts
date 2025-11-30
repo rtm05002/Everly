@@ -22,6 +22,8 @@ export interface OverviewData {
   previousTotals: OverviewTotals
   trend: SeriesPoint[]
   recent: Event[]
+  indexedDocs?: number
+  lastSyncAt?: string | null
 }
 
 /**
@@ -31,6 +33,9 @@ export interface OverviewData {
  * @returns Overview data with totals, trend, and recent events
  */
 export async function fetchOverview(hubId: string, days: number): Promise<OverviewData> {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
+    throw new Error("Supabase configuration missing")
+  }
   const sb = createServiceClient()
   const now = new Date()
   

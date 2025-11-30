@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus } from "lucide-react"
 import { toast } from "sonner"
+import { DEMO_MODE } from "@/lib/env.client"
 
 interface AddSourceDialogProps {
   hubId: string
@@ -36,6 +37,11 @@ export function AddSourceDialog({ hubId, kind, onSuccess, children }: AddSourceD
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // Don't allow Whop source creation in demo mode
+    if (DEMO_MODE && (kind === 'whop_product' || kind === 'whop_forum')) {
+      toast.error("Requires live Whop connection (disabled in demo mode)")
+      return
+    }
     setLoading(true)
 
     try {
@@ -203,8 +209,12 @@ export function AddSourceDialog({ hubId, kind, onSuccess, children }: AddSourceD
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Source'}
+            <Button 
+              type="submit" 
+              disabled={loading || (DEMO_MODE && (kind === 'whop_product' || kind === 'whop_forum'))}
+              title={DEMO_MODE && (kind === 'whop_product' || kind === 'whop_forum') ? "Requires live Whop connection (disabled in demo mode)" : undefined}
+            >
+              {loading ? 'Creating...' : DEMO_MODE && (kind === 'whop_product' || kind === 'whop_forum') ? 'Requires live Whop connection (disabled in demo mode)' : 'Create Source'}
             </Button>
           </div>
         </form>

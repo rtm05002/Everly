@@ -48,32 +48,25 @@ export function OverviewPageClient({ children, defaultRange = "60d" }: OverviewP
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground mb-2">Overview</h1>
-          <p className="text-muted-foreground">Track your community's engagement and growth metrics</p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Select value={range} onValueChange={handleRangeChange} disabled={isPending}>
-            <SelectTrigger className="w-[140px] bg-transparent">
-              <SelectValue>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  {RANGE_OPTIONS.find((opt) => opt.value === range)?.label || "Last 60 days"}
-                </div>
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {RANGE_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-end">
+        <Select value={range} onValueChange={handleRangeChange} disabled={isPending}>
+          <SelectTrigger className="w-[140px] bg-transparent">
+            <SelectValue>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                {RANGE_OPTIONS.find((opt) => opt.value === range)?.label || "Last 60 days"}
+              </div>
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {RANGE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {isPending ? (

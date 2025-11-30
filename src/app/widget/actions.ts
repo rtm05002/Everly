@@ -12,11 +12,19 @@ function decodeClaims(token: string): Claims {
 export async function claimBountyAction(bountyId: string, memberToken: string) {
   const { hub_id, member_id } = decodeClaims(memberToken)
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: `Bearer ${memberToken}` } } }
-  )
+  // Use server-side env vars since this is a server action
+  const supabaseUrl = process.env.SUPABASE_URL
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "Missing Supabase configuration. Please set SUPABASE_URL and SUPABASE_ANON_KEY in your environment variables."
+    )
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${memberToken}` } },
+  })
 
   const { error } = await supabase.from("bounty_events").insert({
     hub_id,

@@ -3,6 +3,10 @@
     {
       "path": "/api/admin/whop/sync",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/admin/embeddings/backfill",
+      "schedule": "0 7 * * *"
     }
   ]
 }

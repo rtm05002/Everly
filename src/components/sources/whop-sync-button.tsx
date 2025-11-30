@@ -4,6 +4,7 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { RefreshCw } from "lucide-react"
+import { DEMO_MODE } from "@/lib/env.client"
 
 interface WhopSyncButtonProps {
   hubId: string
@@ -13,6 +14,7 @@ export function WhopSyncButton({ hubId }: WhopSyncButtonProps) {
   const [loading, setLoading] = React.useState(false)
 
   const handleSync = async () => {
+    if (DEMO_MODE) return // Don't run in demo mode
     setLoading(true)
     try {
       const res = await fetch('/api/sync/whop', {
@@ -40,14 +42,15 @@ export function WhopSyncButton({ hubId }: WhopSyncButtonProps) {
     <Button
       variant="outline"
       onClick={handleSync}
-      disabled={loading}
+      disabled={loading || DEMO_MODE}
+      title={DEMO_MODE ? "Requires live Whop connection (disabled in demo mode)" : undefined}
     >
       {loading ? (
         <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
       ) : (
         <RefreshCw className="h-4 w-4 mr-2" />
       )}
-      {loading ? 'Syncing...' : 'Sync Now'}
+      {loading ? 'Syncing...' : DEMO_MODE ? 'Requires live Whop connection (disabled in demo mode)' : 'Sync Now'}
     </Button>
   )
 }

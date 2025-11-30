@@ -24,9 +24,11 @@ import { AddSourceDialog } from "@/components/sources/add-source-dialog"
 interface SourcesPanelProps {
   initialSources: SourceWithStats[]
   hubId: string
+  isDemo?: boolean
+  whopSyncEnabled?: boolean
 }
 
-export function SourcesPanel({ initialSources, hubId }: SourcesPanelProps) {
+export function SourcesPanel({ initialSources, hubId, isDemo = false, whopSyncEnabled = true }: SourcesPanelProps) {
   const [sources, setSources] = React.useState(initialSources)
   const [syncing, setSyncing] = React.useState<Set<string>>(new Set())
   const [loading, setLoading] = React.useState(false)
@@ -112,37 +114,50 @@ export function SourcesPanel({ initialSources, hubId }: SourcesPanelProps) {
 
   return (
     <div className="space-y-4">
-      {/* Add Source buttons - always visible */}
-      <div className="flex gap-2 pb-4 border-b border-border">
-        <AddSourceDialog hubId={hubId} kind="url" onSuccess={refreshSources}>
-          <Button variant="outline" size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add URL Source
-          </Button>
-        </AddSourceDialog>
-        <AddSourceDialog hubId={hubId} kind="whop_product" onSuccess={refreshSources}>
-          <Button variant="outline" size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Whop Source
-          </Button>
-        </AddSourceDialog>
-      </div>
+      {/* Add Source buttons - only visible if whopSyncEnabled */}
+      {whopSyncEnabled && (
+        <div className="flex gap-2 pb-4 border-b border-border">
+          <AddSourceDialog hubId={hubId} kind="url" onSuccess={refreshSources}>
+            <Button variant="outline" size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add URL Source
+            </Button>
+          </AddSourceDialog>
+          <AddSourceDialog hubId={hubId} kind="whop_product" onSuccess={refreshSources}>
+            <Button variant="outline" size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Whop Source
+            </Button>
+          </AddSourceDialog>
+        </div>
+      )}
 
       {/* Sources list */}
       {sources.length === 0 ? (
         <div className="card-elevated p-12 text-center">
-          <p className="text-muted-foreground">No sources yet. Add one above to get started.</p>
+          <p className="text-muted-foreground">
+            {isDemo 
+              ? "Sample Whop sources — syncing disabled"
+              : whopSyncEnabled
+              ? "No sources yet. Add one above to get started."
+              : "No sources have been indexed yet."}
+          </p>
         </div>
       ) : (
-        sources.map((source) => (
-          <SourceCard
-            key={source.id}
-            source={source}
-            isSyncing={syncing.has(source.id)}
-            onSync={() => handleSync(source.id)}
-            onBackfill={handleBackfill}
-          />
-        ))
+        sources.map((source) => {
+          const isDemoSource = isDemo && source.kind?.startsWith("whop:")
+          return (
+            <SourceCard
+              key={source.id}
+              source={source}
+              isSyncing={syncing.has(source.id)}
+              onSync={() => handleSync(source.id)}
+              onBackfill={handleBackfill}
+              isDemo={isDemoSource}
+              whopSyncEnabled={whopSyncEnabled}
+            />
+          )
+        })
       )}
     </div>
   )
@@ -153,9 +168,11 @@ interface SourceCardProps {
   isSyncing: boolean
   onSync: () => void
   onBackfill: () => void
+  isDemo?: boolean
+  whopSyncEnabled?: boolean
 }
 
-function SourceCard({ source, isSyncing, onSync, onBackfill }: SourceCardProps) {
+function SourceCard({ source, isSyncing, onSync, onBackfill, isDemo = false, whopSyncEnabled = true }: SourceCardProps) {
   const lastSyncTime = source.last_sync_finished_at
     ? formatDistanceToNow(new Date(source.last_sync_finished_at), { addSuffix: true })
     : 'Never'
@@ -173,8 +190,13 @@ function SourceCard({ source, isSyncing, onSync, onBackfill }: SourceCardProps) 
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
-            <h3 className="text-lg font-semibold">{source.name}</h3>
-            <Badge variant="outline">{source.kind}</Badge>
+            <h3 className="text-lg font-semibold">
+              {source.name}
+              {isDemo && <span className="ml-2 text-xs text-muted-foreground font-normal">(demo)</span>}
+            </h3>
+            <Badge variant="outline">
+              {isDemo ? `${source.kind} (demo)` : source.kind}
+            </Badge>
             {hasError && (
               <TooltipProvider>
                 <Tooltip>
@@ -201,35 +223,43 @@ function SourceCard({ source, isSyncing, onSync, onBackfill }: SourceCardProps) 
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onSync}
-            disabled={isSyncing}
-          >
-            {isSyncing ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
-            )}
-            Sync Now
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="h-4 w-4" />
+          {isDemo || !whopSyncEnabled ? (
+            <span className="text-xs text-muted-foreground" title="Live Whop syncing will be available after you connect your Whop account.">
+              Read-only (demo)
+            </span>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onSync}
+                disabled={isSyncing}
+              >
+                {isSyncing ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Sync Now
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => window.open(`/assistant/sources/logs?sourceId=${source.id}`, '_blank')}>
-                View Sync Logs
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onBackfill}>
-                Backfill/Verify Counts
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => window.open(`/assistant/sources/logs?sourceId=${source.id}`, '_blank')}>
+                    View Sync Logs
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onBackfill}>
+                    Backfill/Verify Counts
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          )}
         </div>
       </div>
 

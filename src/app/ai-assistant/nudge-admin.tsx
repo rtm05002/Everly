@@ -191,11 +191,11 @@ export function NudgeAdmin({ hubId }: NudgeAdminProps) {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <Badge tone="success" className="px-2 py-0.5">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
                 Active
               </Badge>
-              <Badge variant="outline">
+              <Badge tone="neutral">
                 {recipes.length} Recipes
               </Badge>
             </div>

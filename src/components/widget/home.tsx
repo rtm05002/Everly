@@ -29,7 +29,7 @@ export function WidgetHome({ hubId }: WidgetHomeProps) {
           },
           body: JSON.stringify({
             hubId,
-            memberId: 'demo-member-id' // TODO: Get actual member ID
+            memberId: '00000000-0000-0000-0000-000000000001' // Demo member UUID
           })
         })
 

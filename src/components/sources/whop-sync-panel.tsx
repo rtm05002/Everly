@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
 import { RefreshCw } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { DEMO_MODE } from "@/lib/env.client"
 
 interface WhopSyncPanelProps {
   hubId: string
@@ -31,6 +32,7 @@ export function WhopSyncPanel({ hubId }: WhopSyncPanelProps) {
   }
 
   const handleSync = async () => {
+    if (DEMO_MODE) return // Don't run in demo mode
     setLoading(true)
     try {
       const res = await fetch('/api/sync/whop', {
@@ -78,14 +80,15 @@ export function WhopSyncPanel({ hubId }: WhopSyncPanelProps) {
         <Button
           variant="outline"
           onClick={handleSync}
-          disabled={loading}
+          disabled={loading || DEMO_MODE}
+          title={DEMO_MODE ? "Requires live Whop connection (disabled in demo mode)" : undefined}
         >
           {loading ? (
             <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <RefreshCw className="h-4 w-4 mr-2" />
           )}
-          {loading ? 'Syncing...' : 'Sync Now'}
+          {loading ? 'Syncing...' : DEMO_MODE ? 'Requires live Whop connection (disabled in demo mode)' : 'Sync Now'}
         </Button>
       </div>
 

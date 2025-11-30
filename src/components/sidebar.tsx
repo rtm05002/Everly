@@ -2,43 +2,45 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Bot, Trophy, Users, TrendingUp, BarChart3, Settings, ChevronDown, Zap, ExternalLink, ListTodo } from "lucide-react"
+import { LayoutDashboard, Bot, Trophy, Users, TrendingUp, BarChart3, Settings, ChevronDown, Zap, ExternalLink } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
-import { env } from "@/lib/env"
-
-const navigationSections = [
-  {
-    title: "Core",
-    items: [
-      { name: "Overview", href: "/", icon: LayoutDashboard },
-      { name: "AI Assistant", href: "/ai-assistant", icon: Bot },
-      { name: "Bounties", href: "/bounties", icon: Trophy },
-      ...(env.FEATURE_ONBOARDING ? [{ name: "Onboarding", href: "/onboarding", icon: ListTodo }] : []),
-    ],
-  },
-  {
-    title: "Insights",
-    items: [
-      { name: "Insights", href: "/insights", icon: BarChart3 },
-      { name: "Engagement", href: "/engagement", icon: TrendingUp },
-      { name: "Analytics", href: "/analytics", icon: BarChart3 },
-      { name: "Members", href: "/members", icon: Users },
-    ],
-  },
-  {
-    title: "Utilities",
-    items: [
-      { name: "Automation", href: "/automation", icon: Zap },
-      { name: "Widget", href: "/widget", icon: ExternalLink },
-      { name: "Settings", href: "/settings", icon: Settings },
-    ],
-  },
-]
+import { useMemo, useState } from "react"
+import { PUBLIC_FEATURES, DEMO_MODE } from "@/lib/env.client"
 
 export function Sidebar({ open }: { open: boolean }) {
   const pathname = usePathname()
   const [expandedSections, setExpandedSections] = useState<string[]>(["Core", "Insights"])
+
+  const navigationSections = useMemo(() => {
+    const coreItems = [
+      { name: "Overview", href: "/", icon: LayoutDashboard },
+      { name: "AI Assistant", href: "/ai-assistant", icon: Bot },
+      { name: "Bounties", href: "/bounties", icon: Trophy },
+    ]
+
+    if (PUBLIC_FEATURES.memberChat) {
+      coreItems.push({ name: "Widget", href: "/widget", icon: ExternalLink })
+    }
+
+    const utilities = [
+      { name: "Automation", href: "/automation", icon: Zap },
+      { name: "Settings", href: "/settings", icon: Settings },
+    ]
+
+    return [
+      { title: "Core", items: coreItems },
+      {
+        title: "Insights",
+        items: [
+          { name: "Insights", href: "/insights", icon: BarChart3 },
+          { name: "Engagement", href: "/engagement", icon: TrendingUp },
+          { name: "Analytics", href: "/analytics", icon: BarChart3 },
+          { name: "Members", href: "/members", icon: Users },
+        ],
+      },
+      { title: "Utilities", items: utilities },
+    ]
+  }, [])
 
   const toggleSection = (title: string) => {
     setExpandedSections((prev) => (prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]))
@@ -76,20 +78,27 @@ export function Sidebar({ open }: { open: boolean }) {
                   <div className="mt-2 space-y-1">
                     {section.items.map((item) => {
                       const isActive = pathname === item.href
+                      const isDemoRelevant = DEMO_MODE && (item.name === "Overview" || item.name === "AI Assistant")
                       return (
-                        <Link
-                          key={item.name}
-                          href={item.href}
-                          className={cn(
-                            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                            isActive
-                              ? "bg-blue-200 text-blue-800 shadow-sm"
-                              : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                        <div key={item.name} className="space-y-0.5">
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                              isActive
+                                ? "bg-blue-200 text-blue-800 shadow-sm"
+                                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                            )}
+                          >
+                            <item.icon className="h-5 w-5" strokeWidth={2} />
+                            {item.name}
+                          </Link>
+                          {isDemoRelevant && (
+                            <p className="text-[10px] text-muted-foreground px-3 italic">
+                              Using sample Whop community data
+                            </p>
                           )}
-                        >
-                          <item.icon className="h-5 w-5" strokeWidth={2} />
-                          {item.name}
-                        </Link>
+                        </div>
                       )
                     })}
                   </div>

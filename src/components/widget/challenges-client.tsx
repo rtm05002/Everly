@@ -33,7 +33,7 @@ export function ChallengesClient({ bounties: initialBounties, hubId }: Challenge
           },
           body: JSON.stringify({
             hubId,
-            memberId: 'demo-member-id' // Use a demo member ID
+            memberId: '00000000-0000-0000-0000-000000000001' // Demo member UUID
           })
         })
 

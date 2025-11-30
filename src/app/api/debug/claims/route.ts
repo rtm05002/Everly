@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { verifyJWT } from "@/lib/jwt"
+import { verifyToken } from "@/lib/auth/session"
 
 export async function GET(request: NextRequest) {
   // Only allow in development
@@ -19,21 +19,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
-    const secret = process.env.SUPABASE_JWT_SECRET
+    const token = authHeader.substring(7)
 
-    if (!secret) {
-      return NextResponse.json(
-        { error: "JWT secret not configured" },
-        { status: 500 }
-      )
-    }
-
-    const claims = verifyJWT(token, secret)
+    const claims = verifyToken(token)
     if (!claims) {
       return NextResponse.json(
         { error: "Invalid or expired token" },
-        { status: 401 }
+        { status: 401 },
       )
     }
 
@@ -42,9 +34,8 @@ export async function GET(request: NextRequest) {
       claims,
       debug: {
         tokenLength: token.length,
-        hasSecret: !!secret,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     })
   } catch (error) {
     console.error("Error verifying token:", error)
@@ -54,5 +45,6 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
 
 

@@ -1,0 +1,13 @@
+[
+  {
+    "ts": "2025-11-08T05:09:03.896Z",
+    "hubId": "7007b327-c7bb-40c9-8865-a48b99612a62",
+    "memberId": "demo-member",
+    "question": "df",
+    "answer": "I understand you're looking for help. While I'm still learning, I can help with questions about bounties, points, challenges, and community features. Could you be more specific about what you need help with?",
+    "confidence": 0.6,
+    "latencyMs": 2,
+    "resolved": true,
+    "config": null
+  }
+]
