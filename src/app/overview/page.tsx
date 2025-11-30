@@ -118,26 +118,31 @@ async function OverviewContent({ range, hubId, isDemo = false }: { range: string
     message: "",
   }
 
-  try {
-    const statsResponse = await adapter.getStatsWithDeltas()
-    currentStats = statsResponse.current
-    previousStats = statsResponse.previous
-    statsLoaded = true
-  } catch (error) {
-    console.warn("overview:getStatsWithDeltas failed", error)
-    try {
-      // Use the selected range, defaulting to "7d" if invalid
-      const rangeStr = range === "7d" || range === "30d" ? range : "7d"
-      currentStats = await adapter.getStats(rangeStr as "7d" | "30d")
-    } catch (fallbackError) {
-      console.warn("overview:getStats fallback failed", fallbackError)
-    }
-  }
+  // For demo hub, skip adapter stats and use fetchOverview directly (it queries the same tables)
+  const isDemoHub = hubId === DEMO_HUB_ID
 
-  try {
-    recentEvents = await adapter.recentEvents()
-  } catch (error) {
-    console.warn("overview:recentEvents failed", error)
+  if (!isDemoHub) {
+    try {
+      const statsResponse = await adapter.getStatsWithDeltas()
+      currentStats = statsResponse.current
+      previousStats = statsResponse.previous
+      statsLoaded = true
+    } catch (error) {
+      console.warn("overview:getStatsWithDeltas failed", error)
+      try {
+        // Use the selected range, defaulting to "7d" if invalid
+        const rangeStr = range === "7d" || range === "30d" ? range : "7d"
+        currentStats = await adapter.getStats(rangeStr as "7d" | "30d")
+      } catch (fallbackError) {
+        console.warn("overview:getStats fallback failed", fallbackError)
+      }
+    }
+
+    try {
+      recentEvents = await adapter.recentEvents()
+    } catch (error) {
+      console.warn("overview:recentEvents failed", error)
+    }
   }
 
   if (hubId) {
@@ -146,9 +151,9 @@ async function OverviewContent({ range, hubId, isDemo = false }: { range: string
       docsCount = overviewData.indexedDocs ?? 0
       lastSync = overviewData.lastSyncAt ?? null
 
-      // Always use fetchOverview data for engagement trend to respect the selected range
-      // Merge with adapter stats if available, otherwise use fetchOverview totals
-      if (!statsLoaded) {
+      // For demo hub, always use fetchOverview data (it queries the same tables as chart/recent activity)
+      // For non-demo, merge with adapter stats if available, otherwise use fetchOverview totals
+      if (isDemoHub || !statsLoaded) {
         currentStats = {
           membersTotal: overviewData.totals.members,
           activeUsers: overviewData.totals.activeUsers,
@@ -162,6 +167,10 @@ async function OverviewContent({ range, hubId, isDemo = false }: { range: string
           messagesCount: overviewData.previousTotals.messages,
           bountiesCompleted: overviewData.previousTotals.bountiesCompleted,
           engagementTrend: [],
+        }
+        // Use recent events from fetchOverview for demo hub
+        if (isDemoHub) {
+          recentEvents = overviewData.recent
         }
       } else {
         // Override engagement trend with fetchOverview data to ensure correct range
