@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { WhopServerSdk } from "@whop/api";
 import { createServiceClient } from "@/server/db";
-import { signJwt } from "@/lib/jwt";
+import { createSessionForMember } from "@/lib/auth/createSessionFromMember";
 
 function isLocalhost(u: URL) {
   return u.hostname === "localhost" || u.hostname.startsWith("127.");
@@ -75,12 +75,8 @@ export async function GET(req: Request) {
         }
       }
 
-      const jwt = signJwt({ hub_id: hubId, role: "creator", member_id: memberId });
       const res = NextResponse.redirect(new URL(next, url.origin), 302);
-      res.headers.append(
-        "Set-Cookie",
-        `session=${jwt}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 7}`,
-      );
+      createSessionForMember(res, hubId, memberId, "creator");
       return res;
     } catch (err: any) {
       return new NextResponse(err?.message || "bypass_failed", { status: 500 });

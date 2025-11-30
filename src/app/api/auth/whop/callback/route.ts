@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { WhopServerSdk } from "@whop/api";
 
-import { signJwt } from "@/lib/jwt";
+import { createSessionForMember } from "@/lib/auth/createSessionFromMember";
 
 
 
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
 
   // 🔍 DEBUG PATH (what you're hitting with ?debug=1)
 
-  if (debug) {
+  if (debug === "1") {
 
     const cookieHeader = req.headers.get("cookie") || "";
 
@@ -198,9 +198,7 @@ export async function GET(req: NextRequest) {
 
 
 
-  // 4) create local session JWT
-
-  // For now we can use DEMO_HUB_ID or fall back to a simple placeholder.
+  // 4) create local session JWT and set cookie
 
   const hubId =
 
@@ -210,41 +208,15 @@ export async function GET(req: NextRequest) {
 
 
 
-  const jwt = signJwt({
-
-    hub_id: hubId,
-
-    member_id: "whop-member",
-
-    role: "creator",
-
-  });
-
-
-
   const redirectUrl = makeUrl(nextPath || "/overview");
 
   const res = NextResponse.redirect(redirectUrl);
 
 
 
-  // 5) set session cookie so middleware sees you as authenticated
+  // Create session using helper
 
-  res.cookies.set({
-
-    name: "session",
-
-    value: jwt,
-
-    httpOnly: true,
-
-    sameSite: "lax",
-
-    path: "/",
-
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-
-  });
+  createSessionForMember(res, hubId, "whop-member", "creator");
 
 
 
