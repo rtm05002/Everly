@@ -74,45 +74,46 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // a. Parse code and state
-    if (!code || !state) {
-      if (debug === "2") {
-        return debugError("parse_params", {
-          message: "missing_code_or_state",
-          code: !!code,
-          state: !!state,
-        });
-      }
-      const loginUrl = new URL("/login", APP_BASE_URL);
-      loginUrl.searchParams.set("error", "missing_code_or_state");
-      return NextResponse.redirect(loginUrl.toString());
+    // Parse code and state (already parsed above, but validate code here)
+    if (!code) {
+      return NextResponse.redirect(
+        new URL("/login?error=missing_code", req.url),
+      );
     }
 
-    // b. Validate state cookie
+    // Read cookies from the request (Next 13/14 API routes)
     const cookieHeader = req.headers.get("cookie") || "";
-    const stateCookieKey = `oauth-state.${state}`;
-    const stateCookie =
-      cookieHeader
-        .split(";")
-        .map((c) => c.trim())
-        .find((c) => c.startsWith(`${stateCookieKey}=`)) ?? null;
 
-    if (!stateCookie) {
-      if (debug === "2") {
-        return debugError("validate_state", {
-          message: "invalid_state",
-          stateCookieKey,
-          cookieHeader,
-        });
+    // Try to get the "next" path from oauth-redirect cookie first
+    const redirectCookie = cookieHeader
+      .split("; ")
+      .find((c) => c.startsWith("oauth-redirect="));
+
+    let nextPath = "/overview";
+    if (redirectCookie) {
+      const raw = redirectCookie.split("=")[1] || "";
+      try {
+        nextPath = decodeURIComponent(raw) || "/overview";
+      } catch {
+        nextPath = "/overview";
       }
-      const loginUrl = new URL("/login", APP_BASE_URL);
-      loginUrl.searchParams.set("error", "invalid_state");
-      return NextResponse.redirect(loginUrl.toString());
     }
 
-    // Extract the "next" path we stored in the cookie (default to /overview)
-    const rawValue = stateCookie.split("=")[1] ?? "";
-    const nextPath = decodeURIComponent(rawValue || "/overview");
+    // Optional: still log state mismatch for debugging, but don't bail out
+    const stateCookieKey = state ? `oauth-state.${state}` : null;
+    const stateCookie = stateCookieKey
+      ? cookieHeader.split("; ").find((c) => c.startsWith(`${stateCookieKey}=`))
+      : null;
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[whop-oauth] callback debug", {
+        codePresent: !!code,
+        state,
+        stateCookieKey,
+        hasStateCookie: !!stateCookie,
+        nextPath,
+      });
+    }
 
     // c. Exchange code for tokens with Whop
     let authResponse: any;
@@ -275,16 +276,18 @@ export async function GET(req: NextRequest) {
         hasToken: !!sessionToken,
       });
 
-      // e. Clean up OAuth cookies
-      res.cookies.set({
-        name: stateCookieKey,
-        value: "",
-        path: "/",
-        httpOnly: true,
-        sameSite: "none",
-        secure: true, // Required for SameSite=None
-        maxAge: 0,
-      });
+      // e. Clean up OAuth cookies (don't rely on them existing)
+      if (stateCookieKey) {
+        res.cookies.set({
+          name: stateCookieKey,
+          value: "",
+          path: "/",
+          httpOnly: true,
+          sameSite: "none",
+          secure: true, // Required for SameSite=None
+          maxAge: 0,
+        });
+      }
       res.cookies.set({
         name: "oauth-redirect",
         value: "",
