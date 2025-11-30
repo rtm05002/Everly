@@ -3,8 +3,12 @@ export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
 import { createServiceClient } from "@/server/db"
-import { serverEnv, FEATURE_WHOP_SYNC, DEMO_MODE } from "@/lib/env.server"
+import { serverEnv } from "@/lib/env.server"
 
+/**
+ * Public health check endpoint - no authentication required
+ * Returns only non-sensitive status information
+ */
 export async function GET() {
   try {
     let supabaseOk = false
@@ -23,13 +27,11 @@ export async function GET() {
 
     const ok = supabaseOk
 
+    // Return only non-sensitive status info - no feature flags or secrets
     return NextResponse.json({
       ok,
       supabase: { ok: supabaseOk },
-      features: {
-        whopSync: FEATURE_WHOP_SYNC,
-        demoMode: DEMO_MODE,
-      },
+      timestamp: new Date().toISOString(),
     })
   } catch (err) {
     console.error("[Health] Unexpected error:", err)
@@ -37,11 +39,8 @@ export async function GET() {
       {
         ok: false,
         supabase: { ok: false },
-        features: {
-          whopSync: FEATURE_WHOP_SYNC,
-          demoMode: DEMO_MODE,
-        },
         error: "health_check_failed",
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     )

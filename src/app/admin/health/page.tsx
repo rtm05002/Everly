@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { headers } from "next/headers"
 import { getHubContextFromHeaders } from "@/lib/request-context"
+import { serverEnv } from "@/lib/env.server"
 
 async function fetchHealth() {
   try {
@@ -37,13 +38,26 @@ export default async function HealthPage() {
   const headerStore = await headers()
   const ctx = getHubContextFromHeaders(headerStore)
 
-  // Gate to creator role only
-  if (ctx.role !== "creator") {
+  // Check for ADMIN_TASK_TOKEN in header (x-admin-task-token or Authorization: Bearer)
+  const adminTokenHeader = headerStore.get("x-admin-task-token") || 
+    headerStore.get("authorization")?.replace(/^Bearer\s+/i, "") || 
+    null
+  
+  const hasValidAdminToken = serverEnv.ADMIN_TASK_TOKEN && 
+    adminTokenHeader && 
+    adminTokenHeader === serverEnv.ADMIN_TASK_TOKEN
+
+  // Allow access if: creator role OR valid admin token
+  const isAuthorized = ctx.role === "creator" || hasValidAdminToken
+
+  if (!isAuthorized) {
     return (
       <div className="container mx-auto py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">404 - Not Found</h1>
-          <p className="text-muted-foreground">This page is only available to creators.</p>
+          <h1 className="text-2xl font-bold mb-4">401 - Unauthorized</h1>
+          <p className="text-muted-foreground">
+            This page requires either creator role or a valid admin task token.
+          </p>
         </div>
       </div>
     )

@@ -92,6 +92,25 @@ export async function GET(req: Request) {
     return NextResponse.redirect("/login?error=whop_env_missing");
   }
 
+  // Debug mode: return JSON instead of redirecting
+  const debug = url.searchParams.get("debug") === "1";
+  if (debug) {
+    const { url: authorizeUrl, state } = whop.oauth.getAuthorizationUrl({
+      redirectUri,
+      scope: ["read_user"],
+    });
+    return NextResponse.json({
+      ok: true,
+      stage: "start",
+      redirectUri,
+      authorizeUrl,
+      state,
+      appId: process.env.NEXT_PUBLIC_WHOP_APP_ID,
+      apiKeyPresent: !!process.env.WHOP_API_KEY,
+      redirectUriPresent: !!redirectUri,
+    });
+  }
+
   const { url: authorizeUrl, state } = whop.oauth.getAuthorizationUrl({
     redirectUri,
     scope: ["read_user"],
@@ -111,6 +130,7 @@ export async function GET(req: Request) {
     } Max-Age=3600`,
   );
   res.headers.set("x-debug-authorize-url", authorizeUrl);
+  res.headers.set("x-debug-redirect-uri", redirectUri);
   return res;
 }
 
