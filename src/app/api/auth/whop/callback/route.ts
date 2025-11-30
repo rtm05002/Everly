@@ -6,8 +6,6 @@ import { WhopServerSdk } from "@whop/api";
 
 import { signJwt } from "@/lib/jwt";
 
-import { toBool } from "@/lib/utils";
-
 
 
 const whopApi = WhopServerSdk({
@@ -33,192 +31,114 @@ const DEFAULT_MEMBER_ID = process.env.NEXT_PUBLIC_WHOP_AGENT_USER_ID;
 
 
 export async function GET(req: NextRequest) {
+  try {
+    // Parse request URL and extract parameters
+    const url = new URL(req.url);
+    const debug = url.searchParams.get("debug");
+    const code = url.searchParams.get("code");
+    const state = url.searchParams.get("state");
 
-  const url = new URL(req.url);
+    // Get raw Cookie header
+    const cookieHeader = req.headers.get("cookie") || "";
 
-  const code = url.searchParams.get("code") ?? undefined;
+    // Try to find the state cookie
+    const stateCookieKey = state ? `oauth-state.${state}` : null;
+    const stateCookie = stateCookieKey
+      ? cookieHeader
+          .split(";")
+          .map((c) => c.trim())
+          .find((c) => c.startsWith(stateCookieKey + "=")) || null
+      : null;
 
-  const state = url.searchParams.get("state") ?? undefined;
-
-  const debug = toBool(url.searchParams.get("debug") ?? "false");
-
-
-
-  // Basic param parsing / debug info
-
-  const searchParamsObject = Object.fromEntries(url.searchParams.entries());
-
-  const queryString = url.search.substring(url.origin.length + url.pathname.length);
-
-
-
-  if (debug) {
-
-    return NextResponse.json({
-
-      ok: false,
-
-      stage: "parse_params",
-
-      hasCode: Boolean(code),
-
-      hasState: Boolean(state),
-
-      redirectUsed: REDIRECT_URI,
-
-      fullUrl: url.toString(),
-
-      searchParams: searchParamsObject,
-
-      queryString,
-
-    });
-
-  }
-
-
-
-  if (!code || !state) {
-
-    return NextResponse.redirect(
-
-      `/login?error=missing_code_or_state&details=${encodeURIComponent(
-
-        JSON.stringify({ hasCode: !!code, hasState: !!state })
-
-      )}`
-
-    );
-
-  }
-
-
-
-  // Recover the original "next" from the state cookie set in /auth/whop/start
-
-  const cookies = req.headers.get("cookie") ?? "";
-
-  const stateCookiePrefix = `oauth-state.${state}=`;
-
-  const stateCookie = cookies
-
-    .split(";")
-
-    .map((c) => c.trim())
-
-    .find((c) => c.startsWith(stateCookiePrefix));
-
-
-
-  const nextFromState = stateCookie
-
-    ? decodeURIComponent(stateCookie.substring(stateCookiePrefix.length))
-
-    : "/overview";
-
-
-
-  // Exchange code for Whop access token
-
-  const authResponse = await whopApi.oauth.exchangeCode({
-
-    code,
-
-    redirectUri: REDIRECT_URI,
-
-  });
-
-
-
-  if (!authResponse.ok) {
-
-    if (debug) {
-
-      // When ok is false, authResponse has { ok: false, code: number, raw: Response }
-      const errorResponse = authResponse as { ok: false; code: number; raw?: Response; error?: unknown };
-      
+    // Early debug mode: return diagnostics without calling Whop
+    if (debug === "1") {
       return NextResponse.json({
-
-        ok: false,
-
-        stage: "exchangeCode",
-
-        error: "exchange_failed",
-
-        redirectUsed: REDIRECT_URI,
-
-        codeLen: code.length,
-
-        tokenStatus: errorResponse.code,
-
-        tokenBody: errorResponse.error ?? null,
-
+        ok: true,
+        stage: "debug",
+        hasCode: !!code,
+        hasState: !!state,
+        redirectUsed: process.env.WHOP_REDIRECT_URI,
+        fullUrl: url.toString(),
+        searchParams: Object.fromEntries(url.searchParams.entries()),
+        cookieHeader,
+        stateCookieKey,
+        stateCookie,
       });
-
     }
 
-    return NextResponse.redirect("/login?error=whop_exchange_failed");
+    // Normal flow: validate parameters
+    if (!code || !state) {
+      return NextResponse.redirect(
+        `/login?error=missing_code_or_state&details=${encodeURIComponent(
+          JSON.stringify({ hasCode: !!code, hasState: !!state })
+        )}`
+      );
+    }
 
+    // Recover the original "next" from the state cookie set in /auth/whop/start
+    const nextFromState = stateCookie
+      ? decodeURIComponent(stateCookie.substring(stateCookieKey!.length + 1))
+      : "/overview";
+
+    // Exchange code for Whop access token
+    const authResponse = await whopApi.oauth.exchangeCode({
+      code,
+      redirectUri: REDIRECT_URI,
+    });
+
+    if (!authResponse.ok) {
+      return NextResponse.redirect("/login?error=whop_exchange_failed");
+    }
+
+    // For v1, we skip calling Whop for profile details and just use env IDs.
+    // (These are already in your env for your own company/agent.)
+    const hubId = DEFAULT_HUB_ID;
+    const memberId = DEFAULT_MEMBER_ID;
+
+    if (!hubId || !memberId) {
+      // If these are missing, we can't create a session. Safer to fail loudly.
+      return NextResponse.redirect(
+        "/login?error=missing_hub_or_member&hint=configure NEXT_PUBLIC_WHOP_COMPANY_ID and NEXT_PUBLIC_WHOP_AGENT_USER_ID"
+      );
+    }
+
+    const jwt = signJwt({
+      hub_id: hubId,
+      member_id: memberId,
+      role: "creator",
+    });
+
+    const res = NextResponse.redirect(nextFromState || "/overview");
+
+    res.cookies.set("session", jwt, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+
+    return res;
+  } catch (err) {
+    // Log the error
+    console.error("[whop callback error]", err);
+
+    // If debug mode, return detailed error JSON
+    const url = new URL(req.url);
+    const debug = url.searchParams.get("debug");
+    if (debug === "1") {
+      return NextResponse.json(
+        {
+          ok: false,
+          stage: "exception",
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : null,
+        },
+        { status: 500 }
+      );
+    }
+
+    // Otherwise, return generic redirect
+    return NextResponse.redirect("/login?error=whop_callback_failed");
   }
-
-
-
-  // For v1, we skip calling Whop for profile details and just use env IDs.
-
-  // (These are already in your env for your own company/agent.)
-
-  const hubId = DEFAULT_HUB_ID;
-
-  const memberId = DEFAULT_MEMBER_ID;
-
-
-
-  if (!hubId || !memberId) {
-
-    // If these are missing, we can't create a session. Safer to fail loudly.
-
-    return NextResponse.redirect(
-
-      "/login?error=missing_hub_or_member&hint=configure NEXT_PUBLIC_WHOP_COMPANY_ID and NEXT_PUBLIC_WHOP_AGENT_USER_ID"
-
-    );
-
-  }
-
-
-
-  const jwt = signJwt({
-
-    hub_id: hubId,
-
-    member_id: memberId,
-
-    role: "creator",
-
-  });
-
-
-
-  const res = NextResponse.redirect(nextFromState || "/overview");
-
-
-
-  res.cookies.set("session", jwt, {
-
-    httpOnly: true,
-
-    sameSite: "lax",
-
-    secure: process.env.NODE_ENV === "production",
-
-    path: "/",
-
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-
-  });
-
-
-
-  return res;
-
 }
