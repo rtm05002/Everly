@@ -134,6 +134,9 @@ export async function GET(req: NextRequest) {
 
     if (debug) {
 
+      // When ok is false, authResponse has { ok: false, code: number, raw: Response }
+      const errorResponse = authResponse as { ok: false; code: number; raw?: Response; error?: unknown };
+      
       return NextResponse.json({
 
         ok: false,
@@ -146,9 +149,9 @@ export async function GET(req: NextRequest) {
 
         codeLen: code.length,
 
-        tokenStatus: authResponse.status,
+        tokenStatus: errorResponse.code,
 
-        tokenBody: authResponse.error ?? null,
+        tokenBody: errorResponse.error ?? null,
 
       });
 
