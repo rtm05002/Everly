@@ -280,12 +280,18 @@ export async function GET(req: NextRequest) {
         name: stateCookieKey,
         value: "",
         path: "/",
+        httpOnly: true,
+        sameSite: "none",
+        secure: true, // Required for SameSite=None
         maxAge: 0,
       });
       res.cookies.set({
         name: "oauth-redirect",
         value: "",
         path: "/",
+        httpOnly: true,
+        sameSite: "none",
+        secure: true, // Required for SameSite=None
         maxAge: 0,
       });
 

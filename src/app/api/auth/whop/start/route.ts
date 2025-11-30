@@ -115,15 +115,11 @@ export async function GET(req: Request) {
   const res = NextResponse.redirect(authorizeUrl, 302);
   res.headers.append(
     "Set-Cookie",
-    `oauth-state.${state}=${encodeURIComponent(next)}; Path=/; HttpOnly; SameSite=Lax; ${
-      process.env.NODE_ENV === "production" ? "Secure;" : ""
-    } Max-Age=3600`,
+    `oauth-state.${state}=${encodeURIComponent(next)}; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=3600`,
   );
   res.headers.append(
     "Set-Cookie",
-    `oauth-redirect=${encodeURIComponent(redirectUri)}; Path=/; HttpOnly; SameSite=Lax; ${
-      process.env.NODE_ENV === "production" ? "Secure;" : ""
-    } Max-Age=3600`,
+    `oauth-redirect=${encodeURIComponent(redirectUri)}; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=3600`,
   );
   res.headers.set("x-debug-authorize-url", authorizeUrl);
   res.headers.set("x-debug-redirect-uri", redirectUri);

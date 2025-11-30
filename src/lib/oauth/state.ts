@@ -6,9 +6,9 @@ export async function setStateCookie(state: string) {
   const store = await cookies()
   store.set(STATE_COOKIE, state, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
     path: "/",
-    secure: process.env.NODE_ENV === "production",
+    secure: true, // Required for SameSite=None
     maxAge: 60 * 10,
   })
 }

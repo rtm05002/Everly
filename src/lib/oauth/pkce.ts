@@ -22,9 +22,9 @@ export async function setPkceVerifierCookie(verifier: string) {
   const store = await cookies()
   store.set(VERIFIER_COOKIE, verifier, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
     path: "/",
-    secure: process.env.NODE_ENV === "production",
+    secure: true, // Required for SameSite=None
     maxAge: 60 * 10,
   })
 }
