@@ -427,7 +427,8 @@ async function getWindow(range: "7d" | "30d") {
 const supabaseAdapter: DataAdapter = {
   async getStats(range: "7d" | "30d"): Promise<Stats> {
     const sb = createServiceClient()
-    const hubId = env.DEMO_HUB_ID
+    const hubId = DEMO_MODE && DEMO_HUB_ID ? DEMO_HUB_ID : (env.DEMO_HUB_ID ?? null)
+    if (!hubId) throw new Error("hub_id is required but not set (DEMO_HUB_ID missing)")
     const { start, end, days } = await getWindow(range)
 
     // Count members total
@@ -494,7 +495,8 @@ const supabaseAdapter: DataAdapter = {
 
   async getStatsWithDeltas(): Promise<{ current: Stats; previous: Stats; deltas: { membersTotal: number; activeUsers: number; messagesCount: number; bountiesCompleted: number } }> {
     const sb = createServiceClient()
-    const hubId = env.DEMO_HUB_ID
+    const hubId = DEMO_MODE && DEMO_HUB_ID ? DEMO_HUB_ID : (env.DEMO_HUB_ID ?? null)
+    if (!hubId) throw new Error("hub_id is required but not set (DEMO_HUB_ID missing)")
     
     // Calculate date ranges
     const now = new Date()
@@ -616,7 +618,8 @@ const supabaseAdapter: DataAdapter = {
 
   async listBounties(): Promise<Bounty[]> {
     const sb = createServiceClient()
-    const hubId = env.DEMO_HUB_ID
+    const hubId = DEMO_MODE && DEMO_HUB_ID ? DEMO_HUB_ID : (env.DEMO_HUB_ID ?? null)
+    if (!hubId) throw new Error("hub_id is required but not set (DEMO_HUB_ID missing)")
     const { data: rows, error } = await sb
       .from("bounties")
       .select("*")
@@ -675,7 +678,8 @@ const supabaseAdapter: DataAdapter = {
 
   async createBounty(input: Pick<Bounty, "title" | "reward" | "deadline">): Promise<Bounty> {
     const sb = createServiceClient()
-    const hubId = env.DEMO_HUB_ID
+    const hubId = DEMO_MODE && DEMO_HUB_ID ? DEMO_HUB_ID : (env.DEMO_HUB_ID ?? null)
+    if (!hubId) throw new Error("hub_id is required but not set (DEMO_HUB_ID missing)")
     
     // Prepare the database record based on reward type
     let dbRecord: any = {
@@ -770,7 +774,8 @@ const supabaseAdapter: DataAdapter = {
     
     // If this is a completion, create a bounty_event
     if (patch.status === "completed") {
-      const hubId = env.DEMO_HUB_ID
+      const hubId = DEMO_MODE && DEMO_HUB_ID ? DEMO_HUB_ID : (env.DEMO_HUB_ID ?? null)
+      if (!hubId) throw new Error("hub_id is required but not set (DEMO_HUB_ID missing)")
       try {
         // If no memberId provided, get the first member from the hub
         let actualMemberId = memberId
@@ -823,7 +828,8 @@ const supabaseAdapter: DataAdapter = {
 
   async listMembers(): Promise<Member[]> {
     const sb = createServiceClient()
-    const hubId = env.DEMO_HUB_ID
+    const hubId = DEMO_MODE && DEMO_HUB_ID ? DEMO_HUB_ID : (env.DEMO_HUB_ID ?? null)
+    if (!hubId) throw new Error("hub_id is required but not set (DEMO_HUB_ID missing)")
     const { data, error } = await sb
       .from("members")
       .select("*")
@@ -842,7 +848,8 @@ const supabaseAdapter: DataAdapter = {
 
   async recentEvents(): Promise<Event[]> {
     const sb = createServiceClient()
-    const hubId = env.DEMO_HUB_ID
+    const hubId = DEMO_MODE && DEMO_HUB_ID ? DEMO_HUB_ID : (env.DEMO_HUB_ID ?? null)
+    if (!hubId) throw new Error("hub_id is required but not set (DEMO_HUB_ID missing)")
     const { start } = await getWindow("30d")
 
     const [{ data: acts }, { data: bountyEv }] = await Promise.all([
@@ -872,9 +879,9 @@ const supabaseAdapter: DataAdapter = {
 }
 
 // Select adapter based on DATA_BACKEND environment variable
-// In demo mode, always use whop-emulated adapter
+// In demo mode, use db (Supabase) adapter to allow write operations with DEMO_HUB_ID
 const rawBackend = serverEnv.DATA_BACKEND ?? process.env.DATA_BACKEND ?? "file"
-const effectiveBackend = DEMO_MODE ? "whop-emulated" : rawBackend
+const effectiveBackend = DEMO_MODE ? "db" : rawBackend
 
 if (DEMO_MODE && !DEMO_HUB_ID) {
   console.warn("DEMO_MODE enabled but DEMO_HUB_ID missing")

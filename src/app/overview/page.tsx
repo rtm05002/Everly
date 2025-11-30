@@ -24,18 +24,18 @@ interface OverviewPageProps {
   }>
 }
 
-async function getActivationRate(hubId: string | null) {
+async function getActivationRate(hubId: string | null, days: number = 7) {
   if (!hubId) return null
 
   try {
     const supa = getSupabaseServer()
 
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const daysAgo = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
     const { data: newMembers } = await supa
       .from("members")
       .select("id, created_at")
       .eq("hub_id", hubId)
-      .gte("created_at", sevenDaysAgo)
+      .gte("created_at", daysAgo)
 
     if (!newMembers || newMembers.length === 0) return null
 
@@ -95,7 +95,7 @@ async function getActivationRate(hubId: string | null) {
 }
 
 async function OverviewContent({ range, hubId, isDemo = false }: { range: string; hubId: string; isDemo?: boolean }) {
-  const days = parseInt(range.replace("d", "")) || 60
+  const days = parseInt(range.replace("d", "")) || 7
   const adapter = getAdapter()
 
   const emptyStats: Stats = {
@@ -126,7 +126,9 @@ async function OverviewContent({ range, hubId, isDemo = false }: { range: string
   } catch (error) {
     console.warn("overview:getStatsWithDeltas failed", error)
     try {
-      currentStats = await adapter.getStats("7d")
+      // Use the selected range, defaulting to "7d" if invalid
+      const rangeStr = range === "7d" || range === "30d" ? range : "7d"
+      currentStats = await adapter.getStats(rangeStr as "7d" | "30d")
     } catch (fallbackError) {
       console.warn("overview:getStats fallback failed", fallbackError)
     }
@@ -144,6 +146,8 @@ async function OverviewContent({ range, hubId, isDemo = false }: { range: string
       docsCount = overviewData.indexedDocs ?? 0
       lastSync = overviewData.lastSyncAt ?? null
 
+      // Always use fetchOverview data for engagement trend to respect the selected range
+      // Merge with adapter stats if available, otherwise use fetchOverview totals
       if (!statsLoaded) {
         currentStats = {
           membersTotal: overviewData.totals.members,
@@ -159,6 +163,9 @@ async function OverviewContent({ range, hubId, isDemo = false }: { range: string
           bountiesCompleted: overviewData.previousTotals.bountiesCompleted,
           engagementTrend: [],
         }
+      } else {
+        // Override engagement trend with fetchOverview data to ensure correct range
+        currentStats.engagementTrend = overviewData.trend.map((p) => ({ date: p.date, dau: p.value }))
       }
     } catch (error) {
       console.warn("overview:fetchOverview failed", error)
@@ -173,7 +180,7 @@ async function OverviewContent({ range, hubId, isDemo = false }: { range: string
 
   let activation = null
   try {
-    activation = await getActivationRate(hubId)
+    activation = await getActivationRate(hubId, days)
   } catch (error) {
     console.warn("overview:getActivationRate failed", error)
   }
@@ -476,7 +483,7 @@ export default async function OverviewPage({ searchParams }: OverviewPageProps) 
   }
 
   const resolvedParams = await searchParams
-  const range = resolvedParams?.range || "60d"
+  const range = resolvedParams?.range || "7d"
 
   return (
     <Suspense fallback={<Loading />}>

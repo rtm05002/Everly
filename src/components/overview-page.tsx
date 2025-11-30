@@ -23,7 +23,7 @@ interface OverviewPageClientProps {
   defaultRange?: string
 }
 
-export function OverviewPageClient({ children, defaultRange = "60d" }: OverviewPageClientProps) {
+export function OverviewPageClient({ children, defaultRange = "7d" }: OverviewPageClientProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()

@@ -18,7 +18,10 @@ export function DeleteBountyButton({ bountyId }: DeleteBountyButtonProps) {
 
     setIsDeleting(true)
     try {
-      await deleteBountyAction(bountyId)
+      const result = await deleteBountyAction(bountyId)
+      if (!result?.ok) {
+        alert(result?.error || 'Failed to delete bounty. Please try again.')
+      }
     } catch (error) {
       console.error('Failed to delete bounty:', error)
       alert('Failed to delete bounty. Please try again.')

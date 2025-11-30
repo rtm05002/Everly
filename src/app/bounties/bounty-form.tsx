@@ -38,8 +38,12 @@ export function BountyForm() {
         formData.set("badgeDescription", selectedBadge.description || "")
       }
       
-      await createBountyAction(formData)
-      handleClose()
+      const result = await createBountyAction(formData)
+      if (result?.ok) {
+        handleClose()
+      } else {
+        alert(result?.error || 'Failed to create bounty. Please try again.')
+      }
     } catch (error) {
       console.error('Failed to create bounty:', error)
       alert('Failed to create bounty. Please try again.')

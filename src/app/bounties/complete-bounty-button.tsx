@@ -14,9 +14,13 @@ export function CompleteBountyButton({ bountyId }: CompleteBountyButtonProps) {
   const handleComplete = async () => {
     setIsSubmitting(true)
     try {
-      await completeBountyAction(bountyId)
+      const result = await completeBountyAction(bountyId)
+      if (!result?.ok) {
+        alert(result?.error || 'Failed to complete bounty. Please try again.')
+      }
     } catch (error) {
       console.error('Failed to complete bounty:', error)
+      alert('Failed to complete bounty. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
