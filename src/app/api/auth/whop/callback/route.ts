@@ -1,126 +1,221 @@
-﻿import { NextResponse } from "next/server";
+﻿// src/app/api/auth/whop/callback/route.ts
+
+import { NextRequest, NextResponse } from "next/server";
+
 import { WhopServerSdk } from "@whop/api";
+
 import { signJwt } from "@/lib/jwt";
-import { DEMO_HUB_ID } from "@/lib/env.server";
 
-export const runtime = "nodejs";
+import { toBool } from "@/lib/utils";
 
-const whop = WhopServerSdk({
+
+
+const whopApi = WhopServerSdk({
+
   appApiKey: process.env.WHOP_API_KEY!,
+
   appId: process.env.NEXT_PUBLIC_WHOP_APP_ID!,
+
 });
 
-function j(status: number, obj: Record<string, unknown>) {
-  return NextResponse.json(obj, { status });
-}
 
-export async function GET(req: Request) {
+
+const REDIRECT_URI = process.env.WHOP_REDIRECT_URI!;
+
+
+
+// Optional: env-driven defaults for who logs in when Whop auth succeeds
+
+const DEFAULT_HUB_ID = process.env.NEXT_PUBLIC_WHOP_COMPANY_ID;
+
+const DEFAULT_MEMBER_ID = process.env.NEXT_PUBLIC_WHOP_AGENT_USER_ID;
+
+
+
+export async function GET(req: NextRequest) {
+
   const url = new URL(req.url);
-  const code = url.searchParams.get("code");
-  const state = url.searchParams.get("state");
-  const debug = url.searchParams.get("debug") === "1";
 
-  // Early debug mode: return JSON before any processing if debug=1
+  const code = url.searchParams.get("code") ?? undefined;
+
+  const state = url.searchParams.get("state") ?? undefined;
+
+  const debug = toBool(url.searchParams.get("debug") ?? "false");
+
+
+
+  // Basic param parsing / debug info
+
+  const searchParamsObject = Object.fromEntries(url.searchParams.entries());
+
+  const queryString = url.search.substring(url.origin.length + url.pathname.length);
+
+
+
   if (debug) {
-    return j(200, {
+
+    return NextResponse.json({
+
       ok: false,
+
       stage: "parse_params",
-      hasCode: !!code,
-      hasState: !!state,
-      redirectUsed: process.env.WHOP_REDIRECT_URI ?? null,
+
+      hasCode: Boolean(code),
+
+      hasState: Boolean(state),
+
+      redirectUsed: REDIRECT_URI,
+
       fullUrl: url.toString(),
-      searchParams: Object.fromEntries(url.searchParams.entries()),
-      queryString: url.search,
+
+      searchParams: searchParamsObject,
+
+      queryString,
+
     });
+
   }
+
+
 
   if (!code || !state) {
-    // Enhanced error info to help debug missing params
-    return j(400, { 
-      ok: false, 
-      stage: "parse_params", 
-      error: "missing_code_or_state",
-      hasCode: !!code,
-      hasState: !!state,
-      fullUrl: url.toString(),
-      searchParams: Object.fromEntries(url.searchParams.entries()),
-      redirectUri: process.env.WHOP_REDIRECT_URI ?? null,
-    });
+
+    return NextResponse.redirect(
+
+      `/login?error=missing_code_or_state&details=${encodeURIComponent(
+
+        JSON.stringify({ hasCode: !!code, hasState: !!state })
+
+      )}`
+
+    );
+
   }
 
-  const stateCookie = req.headers
-    .get("Cookie")
-    ?.split(";")
-    .find((c) => c.trim().startsWith(`oauth-state.${state}=`));
-  const next = stateCookie ? decodeURIComponent(stateCookie.split("=")[1]) : "/overview";
 
-  const redirectUri = process.env.WHOP_REDIRECT_URI!;
 
-  const authResponse = await whop.oauth.exchangeCode({ code, redirectUri });
+  // Recover the original "next" from the state cookie set in /auth/whop/start
+
+  const cookies = req.headers.get("cookie") ?? "";
+
+  const stateCookiePrefix = `oauth-state.${state}=`;
+
+  const stateCookie = cookies
+
+    .split(";")
+
+    .map((c) => c.trim())
+
+    .find((c) => c.startsWith(stateCookiePrefix));
+
+
+
+  const nextFromState = stateCookie
+
+    ? decodeURIComponent(stateCookie.substring(stateCookiePrefix.length))
+
+    : "/overview";
+
+
+
+  // Exchange code for Whop access token
+
+  const authResponse = await whopApi.oauth.exchangeCode({
+
+    code,
+
+    redirectUri: REDIRECT_URI,
+
+  });
+
+
+
   if (!authResponse.ok) {
-    const status = (authResponse as any).status ?? 400;
-    const body = (authResponse as any).body ?? (authResponse as any).error ?? null;
-    const bodySnippet = typeof body === "string" 
-      ? body.substring(0, 500) 
-      : (typeof body === "object" 
-          ? JSON.stringify(body).substring(0, 500) 
-          : String(body).substring(0, 500));
 
-    // Enhanced debug mode for exchangeCode failures
-    const debugMode = url.searchParams.get("debug") === "1";
-    if (debugMode) {
-      return j(400, {
+    if (debug) {
+
+      return NextResponse.json({
+
         ok: false,
-        stage: "exchange_code",
-        redirectUsed: redirectUri,
+
+        stage: "exchangeCode",
+
+        error: "exchange_failed",
+
+        redirectUsed: REDIRECT_URI,
+
         codeLen: code.length,
-        appIdPresent: !!process.env.NEXT_PUBLIC_WHOP_APP_ID,
-        apiKeyPresent: !!process.env.WHOP_API_KEY,
-        tokenStatus: status,
-        tokenBody: bodySnippet,
-        stateCookiePresent: !!stateCookie,
+
+        tokenStatus: authResponse.status,
+
+        tokenBody: authResponse.error ?? null,
+
       });
+
     }
 
-    return j(400, {
-      ok: false,
-      stage: "exchangeCode",
-      redirectUsed: redirectUri,
-      codeLen: code.length,
-      status,
-      body,
-      stateCookiePresent: !!stateCookie,
-    });
+    return NextResponse.redirect("/login?error=whop_exchange_failed");
+
   }
 
-  const { access_token } = authResponse.tokens;
-  
-  // If debug mode was requested but we got here, return success info
-  if (debug) {
-    return j(200, { ok: true, stage: "exchangeCode", gotToken: !!access_token });
+
+
+  // For v1, we skip calling Whop for profile details and just use env IDs.
+
+  // (These are already in your env for your own company/agent.)
+
+  const hubId = DEFAULT_HUB_ID;
+
+  const memberId = DEFAULT_MEMBER_ID;
+
+
+
+  if (!hubId || !memberId) {
+
+    // If these are missing, we can't create a session. Safer to fail loudly.
+
+    return NextResponse.redirect(
+
+      "/login?error=missing_hub_or_member&hint=configure NEXT_PUBLIC_WHOP_COMPANY_ID and NEXT_PUBLIC_WHOP_AGENT_USER_ID"
+
+    );
+
   }
 
-  // Create session: Use DEMO_HUB_ID as hub_id (or fallback)
-  // For member_id, use a simple deterministic string
-  // In the future, this could fetch actual Whop user/org data
-  const hubId = DEMO_HUB_ID || process.env.DEMO_HUB_ID || "default-hub";
-  const memberId = "whop_creator"; // Simple deterministic ID for now
-  const role = "creator" as const;
 
-  // Sign JWT with the same structure middleware expects
-  const sessionToken = signJwt({ hub_id: hubId, member_id: memberId, role });
 
-  // Create redirect response
-  const redirectUrl = new URL(next, url.origin);
-  const res = NextResponse.redirect(redirectUrl, 302);
+  const jwt = signJwt({
 
-  // Set session cookie with same attributes as dev bypass
-  const cookieMaxAge = 60 * 60 * 24 * 7; // 7 days
-  const cookieSecure = process.env.NODE_ENV === "production" ? "Secure;" : "";
-  res.headers.append(
-    "Set-Cookie",
-    `session=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; ${cookieSecure} Max-Age=${cookieMaxAge}`
-  );
+    hub_id: hubId,
+
+    member_id: memberId,
+
+    role: "creator",
+
+  });
+
+
+
+  const res = NextResponse.redirect(nextFromState || "/overview");
+
+
+
+  res.cookies.set("session", jwt, {
+
+    httpOnly: true,
+
+    sameSite: "lax",
+
+    secure: process.env.NODE_ENV === "production",
+
+    path: "/",
+
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+
+  });
+
+
 
   return res;
+
 }
