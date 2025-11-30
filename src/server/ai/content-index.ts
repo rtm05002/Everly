@@ -86,13 +86,13 @@ export async function backfillSourceStats(hubId: string): Promise<BackfillResult
       
       // Verify chunk counts (only for this source's docs)
       // First, get doc IDs for this source
-      const { data: docs, error: docsError } = await supabase
+      const { data: sourceDocs, error: sourceDocsError } = await supabase
         .from('ai_docs')
         .select('id')
         .eq('source_id', source.id)
       
-      if (!docsError && docs && docs.length > 0) {
-        const docIds = docs.map(d => d.id)
+      if (!sourceDocsError && sourceDocs && sourceDocs.length > 0) {
+        const docIds = sourceDocs.map(d => d.id)
         const { count: chunkCount, error: chunkError } = await supabase
           .from('ai_chunks')
           .select('*', { count: 'exact', head: true })
