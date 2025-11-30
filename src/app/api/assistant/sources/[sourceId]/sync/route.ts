@@ -12,7 +12,8 @@ async function syncUrlSource(db: ReturnType<typeof createServiceClient>, source:
   return { ok: true, message: "URL sync not yet implemented" };
 }
 
-export async function POST(req: Request, { params }: { params: { sourceId: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ sourceId: string }> }) {
+  const { sourceId } = await params;
   const token = req.headers.get("x-admin-task-token");
   if (!token || token !== process.env.ADMIN_TASK_TOKEN) {
     return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
@@ -30,7 +31,7 @@ export async function POST(req: Request, { params }: { params: { sourceId: strin
   const { data: source, error: sourceError } = await db
     .from("ai_sources")
     .select("id, hub_id, kind, locked_until")
-    .eq("id", params.sourceId)
+    .eq("id", sourceId)
     .maybeSingle();
 
   if (sourceError || !source) {

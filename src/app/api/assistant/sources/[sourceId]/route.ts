@@ -5,8 +5,9 @@ import { createServiceClient } from "@/server/db";
 import { readCookie, verifyToken } from "@/lib/auth/session";
 import { DEMO_MODE, DEMO_HUB_ID } from "@/lib/env.server";
 
-export async function DELETE(req: Request, { params }: { params: { sourceId: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ sourceId: string }> }) {
   try {
+    const { sourceId } = await params;
     const token = readCookie(req);
     const claims = verifyToken(token);
     // In demo mode, always use DEMO_HUB_ID (override claims)
@@ -19,7 +20,7 @@ export async function DELETE(req: Request, { params }: { params: { sourceId: str
     const { data: source, error } = await db
       .from("ai_sources")
       .select("id, hub_id")
-      .eq("id", params.sourceId)
+      .eq("id", sourceId)
       .maybeSingle();
 
     if (error || !source || source.hub_id !== effectiveHubId) {
@@ -29,7 +30,7 @@ export async function DELETE(req: Request, { params }: { params: { sourceId: str
     const { error: deleteError } = await db
       .from("ai_sources")
       .delete({ count: "exact" })
-      .eq("id", params.sourceId)
+      .eq("id", sourceId)
       .eq("hub_id", effectiveHubId);
 
     if (deleteError) {

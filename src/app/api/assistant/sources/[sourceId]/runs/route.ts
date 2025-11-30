@@ -5,7 +5,8 @@ import { createServiceClient } from "@/server/db";
 import { readCookie, verifyToken } from "@/lib/auth/session";
 import { DEMO_MODE, DEMO_HUB_ID } from "@/lib/env.server";
 
-export async function GET(req: Request, { params }: { params: { sourceId: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ sourceId: string }> }) {
+  const { sourceId } = await params;
   const sessionToken = readCookie(req);
   const claims = verifyToken(sessionToken);
   // In demo mode, always use DEMO_HUB_ID (override claims)
@@ -18,7 +19,7 @@ export async function GET(req: Request, { params }: { params: { sourceId: string
   const { data: source, error: sourceError } = await db
     .from("ai_sources")
     .select("id, hub_id")
-    .eq("id", params.sourceId)
+    .eq("id", sourceId)
     .maybeSingle();
 
   if (sourceError || !source || source.hub_id !== effectiveHubId) {
