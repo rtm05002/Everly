@@ -1,5 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 import { WhopServerSdk } from "@whop/api";
+import { signJwt } from "@/lib/jwt";
+import { DEMO_HUB_ID } from "@/lib/env.server";
 
 export const runtime = "nodejs";
 
@@ -98,5 +100,27 @@ export async function GET(req: Request) {
     return j(200, { ok: true, stage: "exchangeCode", gotToken: !!access_token });
   }
 
-  return NextResponse.redirect(new URL(next, url.origin), 302);
+  // Create session: Use DEMO_HUB_ID as hub_id (or fallback)
+  // For member_id, use a simple deterministic string
+  // In the future, this could fetch actual Whop user/org data
+  const hubId = DEMO_HUB_ID || process.env.DEMO_HUB_ID || "default-hub";
+  const memberId = "whop_creator"; // Simple deterministic ID for now
+  const role = "creator" as const;
+
+  // Sign JWT with the same structure middleware expects
+  const sessionToken = signJwt({ hub_id: hubId, member_id: memberId, role });
+
+  // Create redirect response
+  const redirectUrl = new URL(next, url.origin);
+  const res = NextResponse.redirect(redirectUrl, 302);
+
+  // Set session cookie with same attributes as dev bypass
+  const cookieMaxAge = 60 * 60 * 24 * 7; // 7 days
+  const cookieSecure = process.env.NODE_ENV === "production" ? "Secure;" : "";
+  res.headers.append(
+    "Set-Cookie",
+    `session=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; ${cookieSecure} Max-Age=${cookieMaxAge}`
+  );
+
+  return res;
 }
