@@ -1,5 +1,6 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getRateLimitConfig } from "./src/lib/rate-limit";
+import { verifyToken } from "./src/lib/auth/session";
 
 const PROTECTED = [
   "/overview",
@@ -63,10 +64,23 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // In production, check for dev cookie or proper auth
+  // Check for dev cookie
   const dev = req.cookies.get("everly_dev")?.value === "1";
   if (dev) return NextResponse.next();
 
+  // Check for valid session cookie
+  const sessionToken = req.cookies.get("session")?.value;
+  const claims = verifyToken(sessionToken);
+  if (claims) {
+    // Valid session - allow access and set user info in headers
+    const res = NextResponse.next();
+    res.headers.set("x-hub-id", claims.hub_id);
+    res.headers.set("x-member-id", claims.member_id);
+    res.headers.set("x-role", claims.role);
+    return res;
+  }
+
+  // No valid session - redirect to login
   const url = req.nextUrl.clone();
   url.pathname = "/login";
   url.searchParams.set("next", pathname);

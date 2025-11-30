@@ -265,7 +265,15 @@ export async function GET(req: NextRequest) {
       const res = NextResponse.redirect(redirectUrl);
 
       // Create session using helper
-      createSessionForMember(res, hubId, memberId, "creator");
+      const sessionToken = createSessionForMember(res, hubId, memberId, "creator");
+      
+      console.log("[whop-oauth-callback] Session created successfully", {
+        hubId,
+        memberId,
+        role: "creator",
+        redirectUrl,
+        hasToken: !!sessionToken,
+      });
 
       // e. Clean up OAuth cookies
       res.cookies.set({
