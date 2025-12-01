@@ -1,5 +1,4 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { WhopServerSdk } from "@whop/api";
 import { signJwt } from "@/lib/jwt";
 
@@ -9,11 +8,12 @@ export async function GET(req: NextRequest) {
   const debug = search.get("debug");
   const code = search.get("code");
   const state = search.get("state");
+  const cookieHeader = req.headers.get("cookie") || "";
 
   const baseDebug = {
     fullUrl: url.toString(),
     searchParams: Object.fromEntries(search.entries()),
-    cookieHeader: req.headers.get("cookie") || null,
+    cookieHeader,
   };
 
   const debugJson = (stage: string, extra: Record<string, unknown> = {}) =>
@@ -33,49 +33,33 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // STEP 2: read cookies
-    const cookieStore = await cookies();
-    const stateCookieName = `oauth-state.${state}`;
-    const stateCookie = cookieStore.get(stateCookieName);
-    const nextPath = stateCookie?.value || "/overview";
+    // STEP 2: compute state cookie name and value
+    const stateCookieName = state ? `oauth-state.${state}` : null;
+    const cookies = req.cookies;
+    const stateCookieValue = stateCookieName ? cookies.get(stateCookieName)?.value : undefined;
 
-    if (debug === "1") {
-      return debugJson("parse_params", {
-        codePresent: !!code,
-        statePresent: !!state,
+    // STEP 3: compute fallback next path
+    const nextPath =
+      stateCookieValue ??
+      cookies.get("oauth_next")?.value ??
+      cookies.get("oauth-next")?.value ??
+      "/overview";
+
+    // Debug mode - return diagnostics (no error)
+    if (debug === "2") {
+      return NextResponse.json({
+        ok: true,
+        stage: "parse_params",
+        fullUrl: url.toString(),
+        searchParams: Object.fromEntries(search.entries()),
+        cookieHeader,
         state,
         stateCookieName,
-        stateCookieExists: !!stateCookie,
+        stateCookieExists: Boolean(stateCookieValue),
         nextPath,
       });
     }
 
-    // STEP 3: state check - verify the state cookie exists
-    if (!stateCookie) {
-      if (debug) {
-        return debugJson("state_mismatch", {
-          state,
-          stateCookieName,
-          stateCookieExists: false,
-        });
-      }
-      return NextResponse.redirect(
-        new URL("/login?error=state_mismatch", url),
-      );
-    }
-
-    // Prepare response object so we can set/clear cookies
-    const resHeaders = new Headers();
-
-    // Clear one-time cookies
-    resHeaders.append(
-      "Set-Cookie",
-      `${stateCookieName}=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0`,
-    );
-    resHeaders.append(
-      "Set-Cookie",
-      "oauth-redirect=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0",
-    );
 
     const appApiKey = process.env.WHOP_API_KEY;
     const appId = process.env.NEXT_PUBLIC_WHOP_APP_ID;
@@ -160,28 +144,69 @@ export async function GET(req: NextRequest) {
       role,
     });
 
-    resHeaders.append(
-      "Set-Cookie",
-      [
-        "session=" + sessionJwt,
-        "Path=/",
-        "HttpOnly",
-        "Secure",
-        "SameSite=None",
-        "Max-Age=" + 60 * 60 * 24 * 7,
-      ].join("; "),
-    );
-
+    // Final redirect using nextPath
     const redirectTo =
       nextPath.startsWith("/") && !nextPath.startsWith("//")
         ? nextPath
         : "/overview";
 
-    resHeaders.set("Location", redirectTo);
-    return new NextResponse(null, {
-      status: 302,
-      headers: resHeaders,
+    const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || url.origin;
+    const redirectUrl = new URL(redirectTo, APP_BASE_URL);
+    
+    const finalRes = NextResponse.redirect(redirectUrl);
+    
+    // Clear one-time cookies (safe even if they didn't exist)
+    if (stateCookieName) {
+      finalRes.cookies.set({
+        name: stateCookieName,
+        value: "",
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        path: "/",
+        maxAge: 0,
+      });
+    }
+    finalRes.cookies.set({
+      name: "oauth-redirect",
+      value: "",
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/",
+      maxAge: 0,
     });
+    finalRes.cookies.set({
+      name: "oauth_next",
+      value: "",
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/",
+      maxAge: 0,
+    });
+    finalRes.cookies.set({
+      name: "oauth-next",
+      value: "",
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/",
+      maxAge: 0,
+    });
+    
+    // Set session cookie
+    finalRes.cookies.set({
+      name: "session",
+      value: sessionJwt,
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+    
+    return finalRes;
   } catch (err: any) {
     if (debug) {
       return debugJson("unhandled_exception", {
