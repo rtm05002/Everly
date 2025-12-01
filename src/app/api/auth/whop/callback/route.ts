@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     }
 
     // STEP 2: read cookies
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const savedState = cookieStore.get("oauth_state")?.value || null;
     const nextPath = cookieStore.get("oauth_next")?.value || "/overview";
 
