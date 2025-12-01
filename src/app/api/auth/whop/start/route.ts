@@ -1,35 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 
-const WHOP_AUTH_URL = "https://whop.com/oauth/";
-
 export async function GET(req: NextRequest) {
-  const search = req.nextUrl.searchParams;
-  const next = search.get("next") || "/overview";
+  const url = new URL(req.url);
+  const next = url.searchParams.get("next") || "/overview";
 
-  const clientId = process.env.NEXT_PUBLIC_WHOP_APP_ID;
-  const redirectUri = process.env.WHOP_REDIRECT_URI;
+  const redirectUri = process.env.WHOP_REDIRECT_URI!;
+  const appId = process.env.NEXT_PUBLIC_WHOP_APP_ID!;
 
-  if (!clientId || !redirectUri) {
+  if (!redirectUri || !appId) {
     return NextResponse.redirect(
-      new URL("/login?error=whop_env_missing", req.nextUrl),
+      new URL("/login?error=whop_env_missing", url),
     );
   }
 
-  // Random state for CSRF protection
+  // 🔑 ONE state value for everything
   const state = crypto.randomUUID();
 
-  const res = NextResponse.redirect(
-    new URL(
-      `${WHOP_AUTH_URL}?client_id=${encodeURIComponent(
-        clientId,
-      )}&response_type=code&scope=read_user&state=${encodeURIComponent(
-        state,
-      )}&redirect_uri=${encodeURIComponent(redirectUri)}`,
-    ),
-  );
+  // Build Whop authorize URL
+  const whopAuthUrl = new URL("https://whop.com/oauth/");
+  whopAuthUrl.searchParams.set("client_id", appId);
+  whopAuthUrl.searchParams.set("response_type", "code");
+  whopAuthUrl.searchParams.set("scope", "read_user");
+  whopAuthUrl.searchParams.set("redirect_uri", redirectUri);
+  whopAuthUrl.searchParams.set("state", state);
 
-  // Set OAuth state and redirect cookies
+  // Create redirect response
+  const res = NextResponse.redirect(whopAuthUrl.toString());
+
+  // Correct state cookie (matches exactly the URL state)
   res.cookies.set({
     name: `oauth-state.${state}`,
     value: next,
@@ -37,9 +36,10 @@ export async function GET(req: NextRequest) {
     sameSite: "none",
     secure: true,
     path: "/",
-    maxAge: 3600,
+    maxAge: 60 * 60, // 1 hour
   });
 
+  // Optional: still keep oauth-redirect if you like
   res.cookies.set({
     name: "oauth-redirect",
     value: redirectUri,
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     sameSite: "none",
     secure: true,
     path: "/",
-    maxAge: 3600,
+    maxAge: 60 * 60,
   });
 
   return res;
