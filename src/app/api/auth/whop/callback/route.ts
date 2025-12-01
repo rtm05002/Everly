@@ -49,8 +49,8 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
           ok: false,
           stage: "exchange_code",
-          status: authResponse.status,
-          error: authResponse.error ?? "exchange_failed",
+          code: (authResponse as any).code,
+          error: (authResponse as any).error ?? "exchange_failed",
         });
       }
       return NextResponse.redirect("/login?error=code_exchange_failed");
