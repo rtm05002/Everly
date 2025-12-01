@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
         stage: "exchange_code",
         status: (authResponse as any).status,
         error: (authResponse as any).error ?? null,
-        tokensPresent: !!authResponse.tokens,
+        tokensPresent: authResponse.ok ? !!authResponse.tokens : false,
       });
     }
 
