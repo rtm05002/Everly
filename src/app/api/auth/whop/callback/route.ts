@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const savedState = cookieStore.get("oauth_state")?.value || null;
   const nextPath = cookieStore.get("oauth_next")?.value || "/overview";
 
@@ -69,26 +69,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Clear one-time cookies
-  const res = NextResponse.next();
-  res.cookies.set({
-    name: "oauth_state",
-    value: "",
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    path: "/",
-    maxAge: 0,
-  });
-  res.cookies.set({
-    name: "oauth_next",
-    value: "",
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    path: "/",
-    maxAge: 0,
-  });
+  // Clear one-time cookies (will be set on final response)
 
   const appApiKey = process.env.WHOP_API_KEY;
   const appId = process.env.NEXT_PUBLIC_WHOP_APP_ID;
@@ -168,7 +149,36 @@ export async function GET(req: NextRequest) {
     role,
   });
 
-  res.cookies.set({
+  // Final redirect to original page
+  const redirectTo =
+    nextPath.startsWith("/") && !nextPath.startsWith("//")
+      ? nextPath
+      : "/overview";
+
+  const finalRes = NextResponse.redirect(new URL(redirectTo, req.nextUrl), 302);
+  
+  // Clear one-time cookies
+  finalRes.cookies.set({
+    name: "oauth_state",
+    value: "",
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+    maxAge: 0,
+  });
+  finalRes.cookies.set({
+    name: "oauth_next",
+    value: "",
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+    maxAge: 0,
+  });
+  
+  // Set session cookie
+  finalRes.cookies.set({
     name: "session",
     value: sessionJwt,
     httpOnly: true,
@@ -178,15 +188,5 @@ export async function GET(req: NextRequest) {
     maxAge: 60 * 60 * 24 * 7, // 7 days
   });
 
-  // Final redirect to original page
-  const redirectTo =
-    nextPath.startsWith("/") && !nextPath.startsWith("//")
-      ? nextPath
-      : "/overview";
-
-  res.headers.set("Location", redirectTo);
-  return new NextResponse(null, {
-    status: 302,
-    headers: res.headers,
-  });
+  return finalRes;
 }
