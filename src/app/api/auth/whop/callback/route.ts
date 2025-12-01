@@ -24,26 +24,26 @@ export async function GET(req: NextRequest) {
 
   try {
     // STEP 1: basic param check
-    if (!code || !state) {
+    if (!code) {
       if (debug) {
-        return debugJson("missing_code_or_state", { code, state });
+        return NextResponse.json(
+          { ok: false, stage: "missing_code" },
+          { status: 400 },
+        );
       }
       return NextResponse.redirect(
         new URL("/login?error=missing_code", url),
       );
     }
 
-    // STEP 2: compute state cookie name and value
+    // STEP 2: compute state cookie name and value (advisory only, never blocks)
     const stateCookieName = state ? `oauth-state.${state}` : null;
     const cookies = req.cookies;
     const stateCookieValue = stateCookieName ? cookies.get(stateCookieName)?.value : undefined;
+    const stateCookieExists = !!stateCookieValue;
 
     // STEP 3: compute fallback next path
-    const nextPath =
-      stateCookieValue ??
-      cookies.get("oauth_next")?.value ??
-      cookies.get("oauth-next")?.value ??
-      "/overview";
+    const nextPath = stateCookieValue || "/overview";
 
     // Debug mode - return diagnostics (no error)
     if (debug === "2") {
@@ -52,10 +52,10 @@ export async function GET(req: NextRequest) {
         stage: "parse_params",
         fullUrl: url.toString(),
         searchParams: Object.fromEntries(search.entries()),
-        cookieHeader,
+        cookieHeader: req.headers.get("cookie") ?? null,
         state,
         stateCookieName,
-        stateCookieExists: Boolean(stateCookieValue),
+        stateCookieExists,
         nextPath,
       });
     }
@@ -87,18 +87,48 @@ export async function GET(req: NextRequest) {
     });
 
     // STEP 4: exchange code with Whop
-    let authResponse: any;
+    let exchangeResult: any = null;
+    let exchangeError: any = null;
     try {
-      authResponse = await whopApi.oauth.exchangeCode({
+      exchangeResult = await whopApi.oauth.exchangeCode({
         code,
         redirectUri,
       });
-    } catch (err: any) {
+    } catch (err) {
+      exchangeError = err;
+    }
+
+    // Debug mode - return exchange diagnostics
+    if (debug === "3" || debug === "exchange") {
+      return NextResponse.json({
+        ok: !!exchangeResult && !!exchangeResult.tokens,
+        stage: "exchange",
+        redirectUri,
+        hasTokens: !!exchangeResult?.tokens,
+        tokens: exchangeResult?.tokens
+          ? {
+              access_token: !!exchangeResult.tokens.access_token,
+              refresh_token: !!exchangeResult.tokens.refresh_token,
+              expires_in: exchangeResult.tokens.expires_in ?? null,
+            }
+          : null,
+        rawResult: exchangeResult ?? null,
+        error: exchangeError
+          ? {
+              name: exchangeError.name,
+              message: exchangeError.message,
+            }
+          : null,
+      });
+    }
+
+    // Normal flow - handle exchange errors
+    if (exchangeError) {
       if (debug) {
         return debugJson("exchange_exception", {
-          message: err?.message,
-          name: err?.name,
-          stack: err?.stack,
+          message: exchangeError?.message,
+          name: exchangeError?.name,
+          stack: exchangeError?.stack,
         });
       }
       return new NextResponse(null, {
@@ -109,17 +139,9 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    if (debug === "2") {
-      return debugJson("exchange_result", {
-        raw: authResponse,
-        okField: authResponse?.ok ?? null,
-        tokensPresent: !!authResponse?.tokens,
-      });
-    }
-
-    if (!authResponse?.ok || !authResponse?.tokens?.access_token) {
+    if (!exchangeResult?.ok || !exchangeResult?.tokens?.access_token) {
       if (debug) {
-        return debugJson("exchange_failed", { raw: authResponse });
+        return debugJson("exchange_failed", { raw: exchangeResult });
       }
       return new NextResponse(null, {
         status: 302,
