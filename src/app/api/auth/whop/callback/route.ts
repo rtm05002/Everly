@@ -1,182 +1,192 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { WhopServerSdk } from "@whop/api";
-import { createServiceClient } from "@/server/db";
-import { createSessionForMember } from "@/lib/auth/createSessionFromMember";
-import crypto from "node:crypto";
+import { signJwt } from "@/lib/jwt";
 
-const redirectUri = process.env.WHOP_REDIRECT_URI!;
+function jsonDebug(
+  req: NextRequest,
+  stage: string,
+  extra: Record<string, unknown> = {},
+) {
+  const url = req.nextUrl.toString();
+  const searchParams = Object.fromEntries(req.nextUrl.searchParams.entries());
+  const cookieHeader = req.headers.get("cookie") || null;
 
-const whopApi = WhopServerSdk({
-  appApiKey: process.env.WHOP_API_KEY!,
-  appId: process.env.NEXT_PUBLIC_WHOP_APP_ID!,
-});
+  return NextResponse.json(
+    {
+      ok: true,
+      stage,
+      fullUrl: url,
+      searchParams,
+      cookieHeader,
+      ...extra,
+    },
+    { status: 200 },
+  );
+}
 
 export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const searchParams = url.searchParams;
-  const debug = searchParams.get("debug");
-  const code = searchParams.get("code");
-  const state = searchParams.get("state");
-  const next = searchParams.get("next") ?? "/overview";
+  const search = req.nextUrl.searchParams;
+  const debug = search.get("debug");
+  const code = search.get("code");
+  const state = search.get("state");
 
-  // Debug mode - early return for diagnostics
+  // Step 1: basic param check
+  if (!code || !state) {
+    if (debug) {
+      return jsonDebug(req, "missing_code_or_state", { code, state });
+    }
+    return NextResponse.redirect(
+      new URL("/login?error=missing_code", req.nextUrl),
+    );
+  }
+
+  const cookieStore = cookies();
+  const savedState = cookieStore.get("oauth_state")?.value || null;
+  const nextPath = cookieStore.get("oauth_next")?.value || "/overview";
+
   if (debug === "1") {
-    return NextResponse.json({
-      ok: true,
-      stage: "parse_params",
-      hasCode: !!code,
-      hasState: !!state,
-      fullUrl: req.url,
-      searchParams: Object.fromEntries(searchParams.entries()),
+    return jsonDebug(req, "parse_params", {
+      codePresent: !!code,
+      statePresent: !!state,
+      state,
+      savedState,
+      nextPath,
     });
   }
 
-  // Validate code
-  if (!code) {
-    return NextResponse.redirect("/login?error=missing_code");
-  }
-
-  // Wrap everything after code check in try/catch
-  try {
-    // Exchange code for tokens using Whop SDK
-    const authResponse = await whopApi.oauth.exchangeCode({
-      code: code,
-      redirectUri: redirectUri,
-    });
-
-    // Debug mode - return exchangeCode result as JSON
-    if (debug === "2") {
-      return NextResponse.json(
-        {
-          ok: authResponse.ok,
-          stage: "exchange_code",
-          status: (authResponse as any).status ?? null,
-          error: (authResponse as any).error ?? null,
-          // Show raw data body if the SDK exposes it
-          data: (authResponse as any).data ?? null,
-          // Don't leak real tokens, just show presence
-          tokensPresent: authResponse.ok ? !!authResponse.tokens : false,
-        },
-        { status: (authResponse as any).status ?? 500 },
-      );
-    }
-
-    // Handle exchange failure
-    if (!authResponse.ok) {
-      return NextResponse.redirect("/login?error=code_exchange_failed");
-    }
-
-    // Get access token
-    const { access_token } = authResponse.tokens;
-
-    // Fetch current user from Whop using access token
-    const userResponse = await fetch("https://api.whop.com/api/v2/me", {
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
-    });
-
-    if (!userResponse.ok) {
-      const errorText = await userResponse.text();
-      throw new Error(`Failed to fetch user: ${userResponse.status} ${userResponse.statusText} - ${errorText}`);
-    }
-
-    const whopUser = await userResponse.json();
-
-    // Extract user ID from Whop user object
-    const whopUserId = whopUser?.id || whopUser?.user_id || whopUser?.data?.id;
-    if (!whopUserId) {
-      throw new Error("No user ID found in Whop response");
-    }
-
-    // Derive hub_id and member_id
-    const hubId = `whop:${process.env.NEXT_PUBLIC_WHOP_APP_ID}`;
-    const memberId = whopUserId;
-    const role = "creator";
-
-    // Upsert hub and member in Supabase
-    const db = createServiceClient();
-
-    // Upsert hub
-    const { data: h, error: hubSelectError } = await db
-      .from("hubs")
-      .select("id")
-      .eq("creator_id", hubId)
-      .maybeSingle();
-
-    if (hubSelectError) {
-      throw new Error(`Hub select error: ${hubSelectError.message}`);
-    }
-
-    let finalHubId = h?.id;
-    if (!finalHubId) {
-      const { data: inserted, error: hubInsertError } = await db
-        .from("hubs")
-        .insert({
-          creator_id: hubId,
-          name: `Everly Hub (${process.env.NEXT_PUBLIC_WHOP_APP_ID})`,
-          settings: {},
-        })
-        .select("id")
-        .single();
-
-      if (hubInsertError || !inserted) {
-        throw new Error(`Hub insert error: ${hubInsertError?.message || "hub insert failed"}`);
-      }
-      finalHubId = inserted.id;
-    }
-
-    // Upsert member
-    const { data: m, error: memberSelectError } = await db
-      .from("members")
-      .select("id")
-      .eq("hub_id", finalHubId)
-      .eq("whop_member_id", memberId)
-      .maybeSingle();
-
-    if (memberSelectError) {
-      throw new Error(`Member select error: ${memberSelectError.message}`);
-    }
-
-    let finalMemberId = m?.id;
-    if (!finalMemberId) {
-      finalMemberId = crypto.randomUUID();
-      const { error: memberInsertError } = await db.from("members").insert({
-        id: finalMemberId,
-        hub_id: finalHubId,
-        whop_member_id: memberId,
-        role: role,
+  // Step 2: CSRF protection — state must match
+  if (!savedState || savedState !== state) {
+    if (debug) {
+      return jsonDebug(req, "state_mismatch", {
+        state,
+        savedState,
+        nextPath,
       });
-
-      if (memberInsertError) {
-        throw new Error(`Member insert error: ${memberInsertError.message}`);
-      }
     }
-
-    // Create session cookie and redirect
-    const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://everly-ten.vercel.app";
-    const redirectUrl = new URL(next, APP_BASE_URL).toString();
-    const res = NextResponse.redirect(redirectUrl);
-
-    createSessionForMember(res, finalHubId, finalMemberId, role);
-
-    console.log("[whop-oauth-callback] Session created successfully", {
-      hubId: finalHubId,
-      memberId: finalMemberId,
-      whopUserId,
-      role,
-    });
-
-    return res;
-  } catch (err) {
-    if (debug === "2") {
-      return NextResponse.json({
-        ok: false,
-        stage: "exception",
-        error: (err as Error).message,
-        stack: (err as Error).stack,
-      }, { status: 500 });
-    }
-    return NextResponse.redirect("/login?error=oauth_internal_error");
+    return NextResponse.redirect(
+      new URL("/login?error=state_mismatch", req.nextUrl),
+    );
   }
+
+  // Clear one-time cookies
+  const res = NextResponse.next();
+  res.cookies.set({
+    name: "oauth_state",
+    value: "",
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+    maxAge: 0,
+  });
+  res.cookies.set({
+    name: "oauth_next",
+    value: "",
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+    maxAge: 0,
+  });
+
+  const appApiKey = process.env.WHOP_API_KEY;
+  const appId = process.env.NEXT_PUBLIC_WHOP_APP_ID;
+  const redirectUri = process.env.WHOP_REDIRECT_URI;
+
+  if (!appApiKey || !appId || !redirectUri) {
+    if (debug) {
+      return jsonDebug(req, "env_missing", {
+        appApiKeyPresent: !!appApiKey,
+        appIdPresent: !!appId,
+        redirectUri,
+      });
+    }
+    return NextResponse.redirect(
+      new URL("/login?error=whop_env_missing", req.nextUrl),
+    );
+  }
+
+  const whopApi = WhopServerSdk({
+    appApiKey,
+    appId,
+  });
+
+  let authResponse: any;
+  try {
+    authResponse = await whopApi.oauth.exchangeCode({
+      code,
+      redirectUri,
+    });
+  } catch (err: any) {
+    if (debug) {
+      return jsonDebug(req, "exchange_exception", {
+        message: err?.message,
+        name: err?.name,
+        stack: err?.stack,
+      });
+    }
+    return NextResponse.redirect(
+      new URL("/login?error=whop_exchange_throw", req.nextUrl),
+    );
+  }
+
+  if (debug === "2") {
+    return jsonDebug(req, "exchange_result", {
+      raw: authResponse,
+      okField: authResponse?.ok ?? null,
+      tokensPresent: !!authResponse?.tokens,
+    });
+  }
+
+  // Whop SDK convention: ok + tokens { access_token, ... }
+  if (!authResponse?.ok || !authResponse?.tokens?.access_token) {
+    if (debug) {
+      return jsonDebug(req, "exchange_failed", {
+        raw: authResponse,
+      });
+    }
+    return NextResponse.redirect(
+      new URL("/login?error=whop_exchange_failed", req.nextUrl),
+    );
+  }
+
+  // ---- Minimal local session creation ----
+  // For now we don't fetch hub/member from Supabase or Whop.
+  // We just create a "creator" session tied to a hub ID from env.
+  const hubId =
+    process.env.DEMO_HUB_ID ||
+    process.env.NEXT_PUBLIC_WHOP_COMPANY_ID ||
+    "whop_demo_hub";
+
+  const memberId = "whop_oauth_member";
+  const role: "creator" = "creator";
+
+  const sessionJwt = signJwt({
+    hub_id: hubId,
+    member_id: memberId,
+    role,
+  });
+
+  res.cookies.set({
+    name: "session",
+    value: sessionJwt,
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+  });
+
+  // Final redirect to original page
+  const redirectTo =
+    nextPath.startsWith("/") && !nextPath.startsWith("//")
+      ? nextPath
+      : "/overview";
+
+  res.headers.set("Location", redirectTo);
+  return new NextResponse(null, {
+    status: 302,
+    headers: res.headers,
+  });
 }
