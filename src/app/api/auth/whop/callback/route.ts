@@ -46,13 +46,19 @@ export async function GET(req: NextRequest) {
 
     // Debug mode - return exchangeCode result as JSON
     if (debug === "2") {
-      return NextResponse.json({
-        ok: authResponse.ok,
-        stage: "exchange_code",
-        status: (authResponse as any).status,
-        error: (authResponse as any).error ?? null,
-        tokensPresent: authResponse.ok ? !!authResponse.tokens : false,
-      });
+      return NextResponse.json(
+        {
+          ok: authResponse.ok,
+          stage: "exchange_code",
+          status: (authResponse as any).status ?? null,
+          error: (authResponse as any).error ?? null,
+          // Show raw data body if the SDK exposes it
+          data: (authResponse as any).data ?? null,
+          // Don't leak real tokens, just show presence
+          tokensPresent: authResponse.ok ? !!authResponse.tokens : false,
+        },
+        { status: (authResponse as any).status ?? 500 },
+      );
     }
 
     // Handle exchange failure
