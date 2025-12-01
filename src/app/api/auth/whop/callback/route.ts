@@ -60,31 +60,18 @@ export async function GET(req: NextRequest) {
     const { access_token } = authResponse.tokens;
 
     // 7. Fetch current user from Whop using access token
-    // Create an authenticated SDK instance with the access token
-    const authenticatedWhopApi = WhopServerSdk({
-      appApiKey: process.env.WHOP_API_KEY!,
-      appId: process.env.NEXT_PUBLIC_WHOP_APP_ID!,
-      accessToken: access_token,
-    });
-
-    // Fetch user - try common SDK methods
+    // Make direct API call to Whop API
     let whopUser: any;
     try {
-      // Try the users.me() method if available
-      if (authenticatedWhopApi.users?.me) {
-        whopUser = await authenticatedWhopApi.users.me();
-      } else {
-        // Fallback: make direct API call
-        const userResponse = await fetch("https://api.whop.com/api/v2/me", {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-          },
-        });
-        if (!userResponse.ok) {
-          throw new Error(`Failed to fetch user: ${userResponse.status}`);
-        }
-        whopUser = await userResponse.json();
+      const userResponse = await fetch("https://api.whop.com/api/v2/me", {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      });
+      if (!userResponse.ok) {
+        throw new Error(`Failed to fetch user: ${userResponse.status}`);
       }
+      whopUser = await userResponse.json();
     } catch (err) {
       console.error("[whop-oauth-callback] Failed to fetch user:", err);
       if (debug === "1" || debug === "2") {
