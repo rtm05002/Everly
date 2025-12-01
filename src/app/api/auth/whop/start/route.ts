@@ -29,25 +29,25 @@ export async function GET(req: NextRequest) {
     ),
   );
 
-  // Minimal cookies: state + next path
+  // Set OAuth state and redirect cookies
   res.cookies.set({
-    name: "oauth_state",
-    value: state,
+    name: `oauth-state.${state}`,
+    value: next,
     httpOnly: true,
-    secure: true,
     sameSite: "none",
+    secure: true,
     path: "/",
-    maxAge: 60 * 60, // 1 hour
+    maxAge: 3600,
   });
 
   res.cookies.set({
-    name: "oauth_next",
-    value: next,
+    name: "oauth-redirect",
+    value: redirectUri,
     httpOnly: true,
-    secure: true,
     sameSite: "none",
+    secure: true,
     path: "/",
-    maxAge: 60 * 60,
+    maxAge: 3600,
   });
 
   return res;

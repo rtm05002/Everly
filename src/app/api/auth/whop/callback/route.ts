@@ -35,26 +35,28 @@ export async function GET(req: NextRequest) {
 
     // STEP 2: read cookies
     const cookieStore = await cookies();
-    const savedState = cookieStore.get("oauth_state")?.value || null;
-    const nextPath = cookieStore.get("oauth_next")?.value || "/overview";
+    const stateCookieName = `oauth-state.${state}`;
+    const stateCookie = cookieStore.get(stateCookieName);
+    const nextPath = stateCookie?.value || "/overview";
 
     if (debug === "1") {
       return debugJson("parse_params", {
         codePresent: !!code,
         statePresent: !!state,
         state,
-        savedState,
+        stateCookieName,
+        stateCookieExists: !!stateCookie,
         nextPath,
       });
     }
 
-    // STEP 3: state check
-    if (!savedState || savedState !== state) {
+    // STEP 3: state check - verify the state cookie exists
+    if (!stateCookie) {
       if (debug) {
         return debugJson("state_mismatch", {
           state,
-          savedState,
-          nextPath,
+          stateCookieName,
+          stateCookieExists: false,
         });
       }
       return NextResponse.redirect(
@@ -68,11 +70,11 @@ export async function GET(req: NextRequest) {
     // Clear one-time cookies
     resHeaders.append(
       "Set-Cookie",
-      "oauth_state=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0",
+      `${stateCookieName}=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0`,
     );
     resHeaders.append(
       "Set-Cookie",
-      "oauth_next=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0",
+      "oauth-redirect=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0",
     );
 
     const appApiKey = process.env.WHOP_API_KEY;

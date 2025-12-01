@@ -12,8 +12,24 @@ const PROTECTED = [
   "/settings",
 ];
 
+const BYPASS_PATHS = [
+  "/api/auth/whop/start",
+  "/api/auth/whop/callback",
+  "/api/health",
+  "/login",
+  "/widget",
+  "/api/widget/chat",
+  "/api/widget/session",
+];
+
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  
+  // Early return for bypass paths - must never be blocked by auth
+  if (BYPASS_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+    return NextResponse.next();
+  }
+  
   const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
 
   // Handle rate limiting for specific API endpoints
