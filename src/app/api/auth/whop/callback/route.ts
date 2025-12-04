@@ -4,7 +4,7 @@ import { createSessionForMember } from "@/lib/auth/createSessionFromMember";
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
-  const state = url.searchParams.get("state");
+  const stateParam = url.searchParams.get("state");
   const debug = url.searchParams.get("debug");
 
   // Read cookies from request
@@ -12,83 +12,173 @@ export async function GET(req: NextRequest) {
   const savedState = cookies.get("oauth_state")?.value ?? null;
   const nextPath = cookies.get("oauth_next")?.value || "/overview";
 
+  // Get environment variables
+  const appId = process.env.NEXT_PUBLIC_WHOP_APP_ID;
+  const apiKey = process.env.WHOP_API_KEY;
+  const redirectUri = process.env.WHOP_REDIRECT_URI;
+
+  // Helper for debug JSON responses
+  const debugJson = (stage: string, extra: Record<string, unknown> = {}) => {
+    return NextResponse.json(
+      {
+        ok: false,
+        stage,
+        code: code || null,
+        stateParam: stateParam || null,
+        savedState,
+        nextPath,
+        hasCode: !!code,
+        hasState: !!stateParam,
+        ...extra,
+      },
+      { status: 200 }
+    );
+  };
+
   // Debug mode 1: show params and cookies
   if (debug === "1") {
     return NextResponse.json({
       ok: true,
       stage: "debug",
       code,
-      stateParam: state,
+      stateParam,
       savedState,
       nextPath,
       hasCode: !!code,
-      hasState: !!state,
+      hasState: !!stateParam,
+      redirectUri,
+      appIdPresent: !!appId,
+      apiKeyPresent: !!apiKey,
     });
   }
 
   // Validate code and state are present
-  if (!code || !state) {
+  if (!code || !stateParam) {
     if (debug === "2") {
-      return NextResponse.json({
-        ok: false,
-        stage: "state_mismatch",
-        code,
-        stateParam: state,
-        savedState,
-        nextPath,
+      return debugJson("missing_code_or_state", {
+        code: code || null,
+        stateParam: stateParam || null,
       });
     }
-    return NextResponse.redirect("/login?error=state_mismatch");
+    return NextResponse.redirect(new URL("/login?error=missing_code", url));
   }
 
   // Validate state matches saved state
-  if (state !== savedState) {
+  if (stateParam !== savedState) {
     if (debug === "2") {
-      return NextResponse.json({
-        ok: false,
-        stage: "state_mismatch",
-        code,
-        stateParam: state,
+      return debugJson("state_mismatch", {
+        stateParam,
         savedState,
-        nextPath,
       });
     }
-    return NextResponse.redirect("/login?error=state_mismatch");
+    return NextResponse.redirect(new URL("/login?error=state_mismatch", url));
   }
 
-  // Debug mode 2: show what we would do (without actually redirecting)
-  if (debug === "2") {
-    const hubId =
-      process.env.WHOP_FALLBACK_HUB_ID ||
-      process.env.DEMO_HUB_ID ||
-      "demo_hub";
-    const memberId = "whop_oauth_member";
+  // Validate environment variables
+  if (!appId || !apiKey || !redirectUri) {
+    if (debug === "2") {
+      return debugJson("env_missing", {
+        appIdPresent: !!appId,
+        apiKeyPresent: !!apiKey,
+        redirectUri: redirectUri || null,
+      });
+    }
+    return NextResponse.redirect(new URL("/login?error=whop_env_missing", url));
+  }
 
+  // --- EXCHANGE CODE FOR TOKEN WITH WHOP ---
+  // Use OAuth 2.0 authorization code flow with client_secret
+  let tokenResponse: Response;
+  let tokenData: any = null;
+  let tokenError: any = null;
+
+  try {
+    // Whop OAuth token endpoint expects form-urlencoded data
+    const tokenUrl = "https://api.whop.com/api/v2/oauth/token";
+    const formData = new URLSearchParams();
+    formData.append("grant_type", "authorization_code");
+    formData.append("code", code);
+    formData.append("client_id", appId);
+    formData.append("client_secret", apiKey);
+    formData.append("redirect_uri", redirectUri);
+
+    tokenResponse = await fetch(tokenUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: formData.toString(),
+    });
+
+    const rawText = await tokenResponse.text();
+    try {
+      tokenData = rawText ? JSON.parse(rawText) : null;
+    } catch (parseErr) {
+      tokenError = { parseError: "Failed to parse response", rawText: rawText.substring(0, 500) };
+    }
+  } catch (fetchErr: any) {
+    tokenError = {
+      message: fetchErr?.message,
+      name: fetchErr?.name,
+      stack: fetchErr?.stack,
+    };
+    if (debug === "2") {
+      return debugJson("exchange_exception", {
+        error: tokenError,
+      });
+    }
+    return NextResponse.redirect(new URL("/login?error=whop_exchange_failed", url));
+  }
+
+  // Debug mode 2: show token exchange result
+  if (debug === "2") {
     return NextResponse.json({
-      ok: true,
-      stage: "would_create_session",
-      code,
-      stateParam: state,
-      savedState,
-      hubId,
-      memberId,
-      nextPath,
+      ok: tokenResponse.ok,
+      stage: tokenResponse.ok ? "exchange_success" : "exchange_error",
+      status: tokenResponse.status,
+      statusText: tokenResponse.statusText,
+      hasTokens: !!(tokenData && tokenData.access_token),
+      tokenData: tokenData
+        ? {
+            hasAccessToken: !!tokenData.access_token,
+            hasRefreshToken: !!tokenData.refresh_token,
+            expiresIn: tokenData.expires_in,
+            tokenType: tokenData.token_type,
+            // Don't expose full tokens in debug
+            accessTokenPreview: tokenData.access_token
+              ? `${tokenData.access_token.substring(0, 20)}...`
+              : null,
+          }
+        : null,
+      error: tokenError || (tokenData && tokenData.error ? tokenData : null),
+      rawBody: tokenData ? null : (tokenError?.rawText || "No response body"),
     });
   }
 
-  // State is valid - create session and redirect
+  // Check if token exchange succeeded
+  if (!tokenResponse.ok || !tokenData || !tokenData.access_token) {
+    // Token exchange failed - redirect to login
+    return NextResponse.redirect(new URL("/login?error=whop_exchange_failed", url));
+  }
+
+  // --- SUCCESS: CREATE SESSION AND REDIRECT ---
+  // Determine hubId (use the demo hub ID that was working before)
   const hubId =
     process.env.WHOP_FALLBACK_HUB_ID ||
     process.env.DEMO_HUB_ID ||
-    "demo_hub";
+    "7007b327-c7bb-40c9-8865-a48b99612a62";
   const memberId = "whop_oauth_member";
 
-  const res = NextResponse.redirect(nextPath || "/overview");
+  const res = NextResponse.redirect(new URL(nextPath || "/overview", url));
 
-  // Create session cookie
-  createSessionForMember(res, hubId, memberId, "creator");
+  // Get domain from request hostname for cookie
+  const domain = url.hostname;
+  const cookieDomain = domain && !domain.includes("localhost") ? domain : undefined;
 
-  // Clear oauth cookies
+  // Create session cookie (pass req for domain detection)
+  createSessionForMember(res, hubId, memberId, "creator", req);
+
+  // Clear oauth cookies with proper domain
   res.cookies.set({
     name: "oauth_state",
     value: "",
@@ -96,6 +186,7 @@ export async function GET(req: NextRequest) {
     sameSite: "none",
     secure: true,
     path: "/",
+    domain: cookieDomain,
     maxAge: 0,
   });
 
@@ -106,6 +197,7 @@ export async function GET(req: NextRequest) {
     sameSite: "none",
     secure: true,
     path: "/",
+    domain: cookieDomain,
     maxAge: 0,
   });
 

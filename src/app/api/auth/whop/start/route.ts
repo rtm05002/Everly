@@ -24,6 +24,10 @@ export async function GET(req: NextRequest) {
 
   const res = NextResponse.redirect(whopAuthUrl.toString());
 
+  // Get domain from request hostname for cookie
+  const domain = url.hostname;
+  const cookieDomain = domain && !domain.includes("localhost") ? domain : undefined;
+
   // clear any old oauth cookies
   res.cookies.set({
     name: "oauth_state",
@@ -32,6 +36,7 @@ export async function GET(req: NextRequest) {
     httpOnly: true,
     sameSite: "none",
     secure: true,
+    domain: cookieDomain,
     maxAge: 0,
   });
   res.cookies.set({
@@ -41,6 +46,7 @@ export async function GET(req: NextRequest) {
     httpOnly: true,
     sameSite: "none",
     secure: true,
+    domain: cookieDomain,
     maxAge: 0,
   });
 
@@ -52,6 +58,7 @@ export async function GET(req: NextRequest) {
     sameSite: "none",
     secure: true,
     path: "/",
+    domain: cookieDomain,
     maxAge: 60 * 10, // 10 minutes
   });
 
@@ -62,6 +69,7 @@ export async function GET(req: NextRequest) {
     sameSite: "none",
     secure: true,
     path: "/",
+    domain: cookieDomain,
     maxAge: 60 * 10,
   });
 

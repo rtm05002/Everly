@@ -81,7 +81,7 @@ export function middleware(req: NextRequest) {
     const claims = verifyToken(token);
 
     if (!claims) {
-      // No valid session - redirect to login/Whop OAuth
+      // No valid session - redirect to login (not directly to OAuth to avoid loops)
       if (req.nextUrl.pathname.startsWith("/api/")) {
         return new NextResponse(JSON.stringify({ ok: false, error: "unauthorized" }), {
           status: 401,
@@ -89,10 +89,8 @@ export function middleware(req: NextRequest) {
         });
       }
 
-      // Redirect to Whop OAuth start
-      const loginUrl = new URL("/api/auth/whop/start", req.url);
-      loginUrl.searchParams.set("next", req.nextUrl.pathname);
-      return NextResponse.redirect(loginUrl);
+      // Redirect to login page (which will handle OAuth initiation)
+      return NextResponse.redirect(new URL("/login", req.url));
     }
 
     // Valid session - set headers and continue

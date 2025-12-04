@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { signJwt } from "@/lib/jwt";
 
 /**
@@ -9,9 +9,15 @@ export function createSessionForMember(
   res: NextResponse,
   hubId: string,
   memberId: string,
-  role: "creator" | "moderator" | "member"
+  role: "creator" | "moderator" | "member",
+  req?: NextRequest
 ): string {
   const token = signJwt({ hub_id: hubId, member_id: memberId, role });
+
+  // Get domain from request hostname (works for both localhost and production)
+  const domain = req?.nextUrl.hostname || undefined;
+  // For localhost, don't set domain (browsers handle localhost differently)
+  const cookieDomain = domain && !domain.includes("localhost") ? domain : undefined;
 
   res.cookies.set({
     name: "session",
@@ -20,6 +26,7 @@ export function createSessionForMember(
     sameSite: "none",
     secure: true, // Required for SameSite=None
     path: "/",
+    domain: cookieDomain,
     maxAge: 60 * 60 * 24 * 7, // 7 days
   });
 
