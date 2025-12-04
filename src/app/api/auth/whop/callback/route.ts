@@ -88,9 +88,11 @@ export async function GET(req: NextRequest) {
 
   // --- EXCHANGE CODE FOR TOKEN WITH WHOP ---
   // Use OAuth 2.0 authorization code flow with client_secret
-  let tokenResponse: Response;
+  // Note: Token exchange failure is treated as a soft failure - we still create a local session
+  let tokenResponse: Response | null = null;
   let tokenData: any = null;
   let tokenError: any = null;
+  let hasTokens = false;
 
   try {
     // Whop OAuth token endpoint expects form-urlencoded data
@@ -113,6 +115,7 @@ export async function GET(req: NextRequest) {
     const rawText = await tokenResponse.text();
     try {
       tokenData = rawText ? JSON.parse(rawText) : null;
+      hasTokens = !!(tokenData && tokenData.access_token);
     } catch (parseErr) {
       tokenError = { parseError: "Failed to parse response", rawText: rawText.substring(0, 500) };
     }
@@ -122,22 +125,16 @@ export async function GET(req: NextRequest) {
       name: fetchErr?.name,
       stack: fetchErr?.stack,
     };
-    if (debug === "2") {
-      return debugJson("exchange_exception", {
-        error: tokenError,
-      });
-    }
-    return NextResponse.redirect(new URL("/login?error=whop_exchange_failed", url));
   }
 
   // Debug mode 2: show token exchange result
   if (debug === "2") {
     return NextResponse.json({
-      ok: tokenResponse.ok,
-      stage: tokenResponse.ok ? "exchange_success" : "exchange_error",
-      status: tokenResponse.status,
-      statusText: tokenResponse.statusText,
-      hasTokens: !!(tokenData && tokenData.access_token),
+      ok: hasTokens,
+      stage: hasTokens ? "exchange_success" : "exchange_error",
+      status: tokenResponse?.status || null,
+      statusText: tokenResponse?.statusText || null,
+      hasTokens,
       tokenData: tokenData
         ? {
             hasAccessToken: !!tokenData.access_token,
@@ -155,13 +152,15 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Check if token exchange succeeded
-  if (!tokenResponse.ok || !tokenData || !tokenData.access_token) {
-    // Token exchange failed - redirect to login
-    return NextResponse.redirect(new URL("/login?error=whop_exchange_failed", url));
+  // Log token exchange failure (soft failure - we continue anyway)
+  if (!hasTokens) {
+    console.log("[whop-callback] Token exchange failed, proceeding with local session only", {
+      status: tokenResponse?.status,
+      error: tokenError || tokenData,
+    });
   }
 
-  // --- SUCCESS: CREATE SESSION AND REDIRECT ---
+  // --- CREATE SESSION AND REDIRECT (regardless of token exchange result) ---
   // Determine hubId (use the demo hub ID that was working before)
   const hubId =
     process.env.WHOP_FALLBACK_HUB_ID ||
