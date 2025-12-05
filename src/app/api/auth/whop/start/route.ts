@@ -73,5 +73,17 @@ export async function GET(req: NextRequest) {
     maxAge: 60 * 60, // 1 hour
   });
 
+  // Dynamic cookie for preview environments (state in cookie name)
+  res.cookies.set({
+    name: `oauth-state.${state}`,
+    value: next,
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+    domain: req.nextUrl.hostname, // This fixes preview environments
+    maxAge: 60 * 60, // 1 hour
+  });
+
   return res;
 }
