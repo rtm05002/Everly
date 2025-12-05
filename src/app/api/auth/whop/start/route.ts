@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
     secure: true,
     path: "/",
     domain: cookieDomain,
-    maxAge: 60 * 10, // 10 minutes
+    maxAge: 60 * 60, // 1 hour
   });
 
   res.cookies.set({
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
     secure: true,
     path: "/",
     domain: cookieDomain,
-    maxAge: 60 * 10,
+    maxAge: 60 * 60, // 1 hour
   });
 
   return res;

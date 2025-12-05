@@ -4,6 +4,9 @@ export interface Claims {
   hub_id: string
   member_id: string
   role: "creator" | "moderator" | "member"
+  email?: string
+  username?: string
+  avatar_url?: string
   exp?: number
 }
 

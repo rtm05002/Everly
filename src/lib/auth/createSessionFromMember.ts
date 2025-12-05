@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { signJwt } from "@/lib/jwt";
+import { signJwt, Claims } from "@/lib/jwt";
 
 /**
  * Creates a session JWT and sets it as a cookie on the provided NextResponse.
@@ -10,9 +10,23 @@ export function createSessionForMember(
   hubId: string,
   memberId: string,
   role: "creator" | "moderator" | "member",
-  req?: NextRequest
+  req?: NextRequest,
+  identity?: {
+    email?: string;
+    username?: string;
+    avatar_url?: string;
+  }
 ): string {
-  const token = signJwt({ hub_id: hubId, member_id: memberId, role });
+  const claims: Claims = {
+    hub_id: hubId,
+    member_id: memberId,
+    role,
+    ...(identity?.email && { email: identity.email }),
+    ...(identity?.username && { username: identity.username }),
+    ...(identity?.avatar_url && { avatar_url: identity.avatar_url }),
+  };
+
+  const token = signJwt(claims);
 
   // Get domain from request hostname (works for both localhost and production)
   const domain = req?.nextUrl.hostname || undefined;
