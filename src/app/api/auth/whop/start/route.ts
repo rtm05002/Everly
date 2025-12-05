@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
     secure: true,
     path: "/",
     domain: cookieDomain,
-    maxAge: 60 * 10, // 10 minutes
+    maxAge: 60 * 60, // 1 hour
   });
 
   res.cookies.set({
@@ -70,7 +70,19 @@ export async function GET(req: NextRequest) {
     secure: true,
     path: "/",
     domain: cookieDomain,
-    maxAge: 60 * 10,
+    maxAge: 60 * 60, // 1 hour
+  });
+
+  // Dynamic cookie for preview environments (state in cookie name)
+  res.cookies.set({
+    name: `oauth-state.${state}`,
+    value: next,
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+    domain: req.nextUrl.hostname, // This fixes preview environments
+    maxAge: 60 * 60, // 1 hour
   });
 
   return res;
